@@ -2,3 +2,25 @@
 */.DS_Store
 .DS_Store
 
+# Python
+*.py[cod]
+*.pyo
+__pycache__/
+*.egg-info/
+*.egg
+*.spec
+*.tar.gz
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb_metadata
+*.jupyter
+
+# AWS
+*.boto
+*.aws/config
+*.aws/credentials
+
+# Virtual environment
+venv/
+
