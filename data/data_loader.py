@@ -50,3 +50,6 @@ def load_imagenet(train_path, test_path):
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=64, shuffle=False)
     
     return train_loader, test_loader
+    
+
+
