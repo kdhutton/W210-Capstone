@@ -10,4 +10,4 @@ train_loader, test_loader  = load_cifar100()
 train_loader, test_loader  = load_imagenet('/path_to_imagenet_train', '/path_to_imagenet_test')
 ```
 
-_Note: FACET dataload is working in progres_
+_Note: FACET dataloader is working in progres_
