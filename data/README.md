@@ -12,7 +12,6 @@ train_loader, test_loader  = load_cifar100()
 train_loader, test_loader  = load_imagenet('/path_to_imagenet_train', '/path_to_imagenet_test')
 ```
 
-__Downalod Imagenet Dataset__
-Please follow the [instruction](https://github.com/facebookarchive/fb.resnet.torch/blob/master/INSTALL.md#download-the-imagenet-dataset)
+__Follow the [instruction](https://github.com/facebookarchive/fb.resnet.torch/blob/master/INSTALL.md#download-the-imagenet-dataset) to download Imagenet Dataset__
 
 
