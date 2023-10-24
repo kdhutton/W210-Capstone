@@ -116,3 +116,26 @@ def RKD_loss(student_outputs, teacher_outputs, criterion, alpha=0.1):
     combined_loss = ce_loss + alpha * (distance_loss + angle_loss)
     
     return combined_loss
+
+
+def CTKD_loss(outputs, labels, teacher_outputs, temp, alpha):
+    """
+    Compute the knowledge distillation loss.
+
+    Args:
+        outputs (torch.Tensor): Logits from the student network.
+        labels (torch.Tensor): Ground truth labels.
+        teacher_outputs (torch.Tensor): Logits from the teacher network.
+        temp (float): Temperature parameter for knowledge distillation.
+        alpha (float): Weighting factor for the loss components.
+
+    Returns:
+        torch.Tensor: Knowledge distillation loss.
+    """
+    kd_loss = nn.KLDivLoss(reduction='batchmean')(F.log_softmax(outputs / temp, dim=1),
+                                                  F.softmax(teacher_outputs / temp, dim=1)) * (alpha * temp * temp)
+    ce_loss = F.cross_entropy(outputs, labels) * (1.0 - alpha)
+    
+    total_loss = kd_loss + ce_loss
+    
+    return total_loss
