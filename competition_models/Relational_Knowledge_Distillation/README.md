@@ -1,6 +1,6 @@
 ## Relational Knowledge Distillation
 
-*This [notebook](https://github.com/kdhutton/W210-Capstone/blob/main/competition_models/RKD/Relational_Knowledge_Distillation_Final_CIFAR.ipynb) is based on the research paper, "[Relational Knowledge Distillation](https://arxiv.org/abs/1904.05068)"*
+*This [notebook](https://github.com/kdhutton/W210-Capstone/blob/main/competition_models/Relational_Knowledge_Distillation/Relational_Knowledge_Distillation_Final_CIFAR.ipynb) is based on the research paper, "[Relational Knowledge Distillation](https://arxiv.org/abs/1904.05068)"*
 
 ### Summary
 
