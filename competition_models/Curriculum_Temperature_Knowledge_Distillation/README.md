@@ -1,6 +1,6 @@
 ## Curriculum Temperature for Knowledge Distillation
 
-*This [notebook](https://github.com/kdhutton/W210-Capstone/blob/main/competition_models/CTKD/CTKD_Final_CIFAR.ipynb) is based on the research paper, "[Curriculum Temperature for Knowledge Distillation](https://arxiv.org/abs/2211.16231)"*
+*This [notebook](https://github.com/kdhutton/W210-Capstone/blob/main/competition_models/Curriculum_Temperature_Knowledge_Distillation/CTKD_Final_CIFAR.ipynb) is based on the research paper, "[Curriculum Temperature for Knowledge Distillation](https://arxiv.org/abs/2211.16231)"*
 
 
 #### Summary
