@@ -1,29 +1,35 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
+# Default models in the base model notebook
 class StudentModel(nn.Module):
     def __init__(self, in_features, num_classes):
         super(StudentModel, self).__init__()
-        self.conv1 = nn.Conv2d(3, in_features, 3)
+        self.conv1 = nn.Conv2d(3, in_features, 3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
-        self.fc1 = nn.Linear(in_features * 15 * 15, num_classes)
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((4, 4))
+        self.fc1 = nn.Linear(in_features * 4 * 4, num_classes)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
-        x = x.view(-1, self.conv1.out_channels * 15 * 15)
+        x = self.adaptive_pool(x)
+        x = x.view(-1, self.conv1.out_channels * 4 * 4)
         x = self.fc1(x)
         return x
+
 
 class TeacherModel(nn.Module):
     def __init__(self, in_features, num_classes):
         super(TeacherModel, self).__init__()
-        self.conv1 = nn.Conv2d(3, in_features, 3)
+        self.conv1 = nn.Conv2d(3, in_features, 3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
-        self.fc1 = nn.Linear(in_features * 15 * 15, num_classes)
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((4, 4))
+        self.fc1 = nn.Linear(in_features * 4 * 4, num_classes)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
-        x = x.view(-1, self.conv1.out_channels * 15 * 15)
+        x = self.adaptive_pool(x)
+        x = x.view(-1, self.conv1.out_channels * 4 * 4)
         x = self.fc1(x)
         return x
 
