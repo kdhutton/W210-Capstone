@@ -1,1 +1,2 @@
-from .models import StudentModel, TeacherModel
+from .models import StudentModel, TeacherModel, Student, Teacher
+# __all__ = ['models']
