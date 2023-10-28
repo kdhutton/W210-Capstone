@@ -33,7 +33,7 @@ class TeacherModel(nn.Module):
         x = self.fc1(x)
         return x
 
-### Classical Knowledge Distillatino
+### Classical Knowledge Distillation
 class Teacher(nn.Module):
     def __init__(self):
         super(Teacher, self).__init__()
