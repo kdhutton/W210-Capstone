@@ -16,6 +16,17 @@ __pycache__/
 *.ipynb_metadata
 *.jupyter
 
+# Downloads
+*.tar
+
+# Data
+./competition_models/MB_Knowledge-Distillation-via-ND/CIFAR/Dataset/data/*
+./competition_models/MB_Knowledge-Distillation-via-ND/CIFAR/DIST++/Dataset/data/*
+./competition_models/MB_Knowledge-Distillation-via-ND/CIFAR/ReviewKD++/Dataset/data/*
+
+# ND Cifar teacher weights
+./competition_models/MB_Knowledge-Distillation-via-ND/CIFAR/ckpt/cifar_teachers/*
+
 # AWS
 *.boto
 *.aws/config
