@@ -51,5 +51,25 @@ def load_imagenet(train_path, test_path):
     
     return train_loader, test_loader
     
+def load_prof(train_path, test_path):
+    
+    # Define data transformations (you can customize this based on your needs)
+    transform = transforms.Compose([
+        transforms.Resize((226, 226)),  # Resize the images to a consistent size
+        transforms.ToTensor(),  # Convert images to PyTorch tensors
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Normalize the images
+    ])
+    
+    # Create the ImageFolder dataset
+    traindataset = datasets.ImageFolder(root=train_path, transform=transform)
+    testdataset = datasets.ImageFolder(root=test_path, transform=transform)
+    
+    
+    # Create a DataLoader to load the data
+    batch_size = 32  # You can adjust this based on your hardware and requirements
+    train_loader = torch.utils.data.DataLoader(traindataset, batch_size=batch_size, shuffle=True, num_workers=4)
+    test_loader = torch.utils.data.DataLoader(testdataset, batch_size=batch_size, shuffle=True, num_workers=4)
+    
+    return train_loader, test_loader
 
 
