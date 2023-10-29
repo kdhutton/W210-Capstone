@@ -13,7 +13,7 @@ train_loader, test_loader  = load_imagenet('/path_to_imagenet_train', '/path_to_
 train_loader, test_loader = load_coco(data_dir)
 ```
 
-For the coco data direction, please follow the instruction below to download data.
+For the coco data directory, please follow the instruction below to download data.
 
 ```
 pip3 install awscli
