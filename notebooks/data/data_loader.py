@@ -78,8 +78,7 @@ def load_coco(data_dir, batch_size=64):
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
-        # Normalize using the mean and std for the COCO dataset (you may want to compute these values)
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) # need to review
     ])
 
     # check the data directory
@@ -90,7 +89,6 @@ def load_coco(data_dir, batch_size=64):
                                      annFile=f'{data_dir}/annotations/instances_val2017.json', 
                                      transform=transform)
 
-    # Create data loaders
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True)
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=False)
     
