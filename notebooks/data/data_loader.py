@@ -76,12 +76,12 @@ def load_prof(train_path, test_path):
 def load_coco(data_dir, batch_size=64):
     # Load Data - COCO
     # Adjust mean and std values as appropriate
-    # mean = [0.5071, 0.4867, 0.4408]
-    # std = [0.2675, 0.2565, 0.2761]
+    mean=[0.485, 0.456, 0.406] 
+    std=[0.229, 0.224, 0.225]
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
-        transforms.ToTensor()
-        # transforms.Normalize(mean=mean, std=std)
+        transforms.ToTensor(),
+        transforms.Normalize(mean=mean, std=std)
     ])
 
     # check the data directory
