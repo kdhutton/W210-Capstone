@@ -35,3 +35,6 @@ __pycache__/
 # Virtual environment
 venv/
 
+# folders
+notebooks/local_images_dir/
+

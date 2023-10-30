@@ -85,3 +85,43 @@ class Student(nn.Module):
         if self.use_dropout:
             x = self.dropout_50(x)
         return self.layer3(x)
+
+### Retional Knowledge Distillation
+class CustomResNet18(nn.Module):
+    output_size = 512
+
+    def __init__(self, pretrained=True, num_classes=10):
+        super(CustomResNet18, self).__init__()
+
+        # Get the pretrained model
+        pretrained_model = torchvision.models.resnet18(pretrained=pretrained)
+        
+        # Copy layers from the pretrained model
+        for module_name in ['conv1', 'bn1', 'relu', 'maxpool', 'layer1', 'layer2', 'layer3', 'layer4', 'avgpool']:
+            self.add_module(module_name, getattr(pretrained_model, module_name))
+
+        # Add an adaptive average pooling layer
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((1, 1))
+
+        # Add a final fully connected layer
+        self.fc = nn.Linear(self.output_size, num_classes)
+
+    def forward(self, x, get_ha=False):
+        x = self.maxpool(self.relu(self.bn1(self.conv1(x))))
+        b1 = self.layer1(x)
+        b2 = self.layer2(b1)
+        b3 = self.layer3(b2)
+        b4 = self.layer4(b3)
+        x = self.avgpool(b4)
+
+        # If get_ha flag is True, return intermediate activations
+        if get_ha:
+            return b1, b2, b3, b4, x
+
+        # Use the adaptive pooling layer
+        x = self.adaptive_pool(x)
+        x = x.view(x.size(0), -1)
+
+        # Final fully connected layer
+        x = self.fc(x)
+        return x
