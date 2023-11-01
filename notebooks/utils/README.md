@@ -20,3 +20,8 @@ from loss_functions import CTKD_loss
 loss = CTKD_loss(outputs, labels, teacher_outputs, temp, alpha)
 ```
 
+__Norm and Direction__
+```
+from loss_functions import 
+```
+
