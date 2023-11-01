@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision import datasets, transforms, models
 
 # Default models in the base model notebook
 class StudentModel(nn.Module):
@@ -94,7 +95,7 @@ class CustomResNet18(nn.Module):
         super(CustomResNet18, self).__init__()
 
         # Get the pretrained model
-        pretrained_model = torchvision.models.resnet18(pretrained=pretrained)
+        pretrained_model = models.resnet18(pretrained=pretrained)
         
         # Copy layers from the pretrained model
         for module_name in ['conv1', 'bn1', 'relu', 'maxpool', 'layer1', 'layer2', 'layer3', 'layer4', 'avgpool']:
