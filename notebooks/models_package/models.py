@@ -91,7 +91,7 @@ class Student(nn.Module):
 class CustomResNet18(nn.Module):
     output_size = 512
 
-    def __init__(self, pretrained=True, num_classes=10):
+    def __init__(self, pretrained=False, num_classes=10):
         super(CustomResNet18, self).__init__()
 
         # Get the pretrained model
