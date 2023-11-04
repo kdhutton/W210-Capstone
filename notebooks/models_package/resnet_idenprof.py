@@ -116,7 +116,8 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, num_filters[2], n, stride=2)
         self.layer3 = self._make_layer(block, num_filters[3], n, stride=2)
         self.avgpool = nn.AvgPool2d(8)
-        self.fc = nn.Linear(num_filters[3] * block.expansion, num_class)
+        # self.fc = nn.Linear(num_filters[3] * block.expansion, num_class)
+        self.fc = nn.Linear(12544, num_class) 
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
