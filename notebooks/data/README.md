@@ -5,7 +5,7 @@ _Note: FACET dataloader is working in progres_
 
 
 ```
-from data.data_loader import load_cifar10, load_cifar100, load_imagenet
+from data.data_loader import load_cifar10, load_cifar100, load_imagenet, load_coco, load_wider
 
 train_loader, test_loader = load_cifar10()
 train_loader, test_loader  = load_cifar100()
