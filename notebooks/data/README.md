@@ -11,6 +11,8 @@ train_loader, test_loader = load_cifar10()
 train_loader, test_loader  = load_cifar100()
 train_loader, test_loader  = load_imagenet('/path_to_imagenet_train', '/path_to_imagenet_test')
 train_loader, test_loader = load_coco(data_dir)
+trainloader, testloader  = load_wider() # default
+
 ```
 
 For the coco data directory, please follow the instruction below to download data.
