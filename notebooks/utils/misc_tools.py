@@ -193,3 +193,33 @@ def retrieve_teacher_class_weights(model_name, model_weight_path, num_class, dat
     with open("./class_means/{}_embedding_fea/{}.json".format(data_name, model_name), 'w', encoding='utf-8') as f:
         f.write(emb_json)
     f.close()
+
+
+def new_teacher_class_weights(model_name, model_weight_path, num_class, data_name, dataloader, batch_size):
+    ''' Use the extracted feature embeddings to create a json of class means for teacher'''
+    model = models_package.__dict__[model_name](num_class=num_class)
+    checkpoint=torch.load(model_weight_path)
+    
+    print('Visualized the embedding feature of the {} model on the train set'.format(model_name))
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # model_ckpt.to(device)
+    # model_ckpt.load_state_dict(torch.load(model_weight_path))
+    # model_ckpt.eval()
+    
+    new_checkpoint = OrderedDict()
+    for k, v in checkpoint['model_state_dict'].items():
+        name = k[7:] # remove module.
+        new_checkpoint[name] = v
+    model.load_state_dict(new_checkpoint)
+
+    for param in model.parameters():
+        param.requires_grad = False
+    
+    model = model.cuda()
+
+    emb = get_emb_fea(model=model, dataloader=dataloader, batch_size=batch_size)
+    emb_json = json.dumps(emb, indent=4)
+    with open("./class_means/{}_embedding_fea/{}.json".format(data_name, model_name), 'w', encoding='utf-8') as f:
+        f.write(emb_json)
+    f.close()
+    
