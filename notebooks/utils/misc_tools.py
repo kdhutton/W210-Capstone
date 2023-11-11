@@ -13,7 +13,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 #### finding the optimal learning rate
 def best_LR(save_name, model, trainloader, criterion, optimizer, scheduler, 
-                num_epochs=5, lr_range=(1e-4, 1e-1), plot_loss=True):
+                num_epochs=5, emb = False, lr_range=(1e-4, 1e-1), plot_loss=True):
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.train()
@@ -31,7 +31,11 @@ def best_LR(save_name, model, trainloader, criterion, optimizer, scheduler,
             
             inputs, labels = inputs.to(device), labels.to(device)
             optimizer.zero_grad()
-            outputs = model(inputs)
+            # the Norm and Direction models give 2 outputs - feature embeddings and output
+            if emb:
+                _, outputs = model(inputs)
+            else:
+                outputs = model(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -60,8 +64,63 @@ def best_LR(save_name, model, trainloader, criterion, optimizer, scheduler,
         plt.title('Learning Rate Range Test')
         plt.axvline(x=best_lr, color='red', linestyle='--', label=f'Best LR: {best_lr}')
         plt.legend()
-        # plt.savefig(plot_name, bbox_inches='tight')
+        plt.savefig(plot_name, bbox_inches='tight')
         plt.show()
     
     print(f'Best learning rate: {best_lr}')
     return best_lr
+
+
+
+def train_teacher(model_name, model, trainloader, criterion, optimizer, scheduler, num_epochs=240, patience=5):
+    ''' A function to train the teacher models'''
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.train()
+    model.to(device)
+    best_train_loss = float('inf')
+    patience_counter = 0
+
+    for epoch in range(num_epochs):
+        running_loss = 0.0
+        epoch_loss = 0.0  
+        num_batches = 0  
+        for i, (inputs, labels) in enumerate(tqdm(trainloader)):
+            inputs, labels = inputs.to(device), labels.to(device)
+            optimizer.zero_grad()
+            _, outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+            epoch_loss += loss.item()
+            num_batches += 1
+            if i % 100 == 99:  # Print every 100 mini-batches
+                print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
+                running_loss = 0.0
+
+        epoch_loss /= num_batches  
+        
+        # Check for early stopping
+        if epoch_loss < best_train_loss:
+            best_train_loss = epoch_loss
+            patience_counter = 0 
+            # checkpoint
+            save_path = './weights/'
+            model_save_name = str(save_path + model_name + '/checkpoint.pth')
+            mode_weights_name = str(save_path + model_name + '/weights.pth')
+
+            torch.save(model.state_dict(), mode_weights_name)
+            torch.save(model, model_save_name)
+
+        else:
+            patience_counter += 1
+
+        if patience_counter >= patience:
+            print('Early stopping')
+            break
+
+        scheduler.step()
+
+    print("Finished Training Teacher")
+    return model
