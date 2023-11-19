@@ -13,7 +13,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 import json
 import models_package
 from collections import OrderedDict
-
+import os
 
 #### finding the optimal learning rate
 def best_LR(save_name, model, trainloader, criterion, optimizer, scheduler, 
@@ -56,6 +56,7 @@ def best_LR(save_name, model, trainloader, criterion, optimizer, scheduler,
 
     
     plot_path = './figs/LR/'
+    os.makedirs(plot_path, exist_ok=True)
     plot_name = str(plot_path + save_name)
 
     
@@ -109,13 +110,25 @@ def train_teacher(model_name, model, trainloader, criterion, optimizer, schedule
         if epoch_loss < best_train_loss:
             best_train_loss = epoch_loss
             patience_counter = 0 
+            
             # checkpoint
             save_path = './weights/'
-            model_save_name = str(save_path + model_name + '/checkpoint.pth')
-            mode_weights_name = str(save_path + model_name + '/weights.pth')
 
+            model_save_path = os.path.join(save_path, model_name)
+            
+            os.makedirs(model_save_path, exist_ok=True)
+        
+            model_save_name = os.path.join(model_save_path, 'checkpoint.pth')
+            mode_weights_name = os.path.join(model_save_path, 'weights.pth')
+        
             torch.save(model.state_dict(), mode_weights_name)
             torch.save(model, model_save_name)
+            
+            # model_save_name = str(save_path + model_name + '/checkpoint.pth')
+            # mode_weights_name = str(save_path + model_name + '/weights.pth')
+
+            # torch.save(model.state_dict(), mode_weights_name)
+            # torch.save(model, model_save_name)
 
         else:
             patience_counter += 1
