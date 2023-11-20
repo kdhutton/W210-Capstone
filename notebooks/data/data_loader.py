@@ -113,15 +113,17 @@ def load_coco(data_dir, batch_size=64):
     
     return train_loader, test_loader
 
+
 class DataSet(Dataset):
-    def __init__(self, ann_files, augs, img_size, dataset):
+    def __init__(self, ann_files, augs, img_size, dataset, undersampe=False):
         self.dataset = dataset
         self.ann_files = ann_files
         self.augment = self.augs_function(augs, img_size)
         self.transform = transforms.Compose(
             [
                 transforms.ToTensor(),
-                transforms.Normalize(mean=[0, 0, 0], std=[1, 1, 1])
+                transforms.Normalize(mean=[0, 0, 0], 
+                                     std=[1, 1, 1])
             ]
         )
         self.anns = []
@@ -133,7 +135,8 @@ class DataSet(Dataset):
             self.transform = transforms.Compose(
                 [
                     transforms.ToTensor(),
-                    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+                    transforms.Normalize(mean=[0.5, 0.5, 0.5], 
+                                         std=[0.5, 0.5, 0.5])
                 ]
             )
 
@@ -191,6 +194,31 @@ class DataSet(Dataset):
         print(f"Loaded annotations: {len(self.anns)}")
 
 
+    def undersample_anns(self):
+        # Shuffle annotations before undersampling
+        random.shuffle(self.anns)
+
+        # Count the instances per class
+        class_counts = {}
+        for ann in self.anns:
+            label = self.extract_label(ann['img_path'])  # Assuming this method returns the class label
+            class_counts[label] = class_counts.get(label, 0) + 1
+
+        # Find the minimum class count
+        min_count = min(class_counts.values())
+
+        # Perform undersampling
+        undersampled_anns = []
+        current_counts = {label: 0 for label in class_counts}
+        for ann in self.anns:
+            label = self.extract_label(ann['img_path'])
+            if current_counts[label] < min_count:
+                undersampled_anns.append(ann)
+                current_counts[label] += 1
+
+        # Update the annotations to the undersampled list
+        self.anns = undersampled_anns
+        
     def __len__(self):
         return len(self.anns)
 
