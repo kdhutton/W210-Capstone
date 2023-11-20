@@ -442,9 +442,9 @@ class DataSet(Dataset):
 
 
 
-def load_wider(batch_size, num_workers):
-    train_file = ['data/wider/trainval_wider.json']
-    test_file = ['data/wider/test_wider.json']
+def load_wider(train_file_path, test_file_path, batch_size, num_workers):
+    train_file = [train_file_path]
+    test_file = [test_file_path]
 
     train_dataset = DataSet(train_file, augs = ['RandAugment'], 
                             img_size = 226, dataset = 'wider', undersample=False)
