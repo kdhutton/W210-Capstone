@@ -142,6 +142,53 @@ def train_teacher(model_name, model, trainloader, criterion, optimizer, schedule
     print("Finished Training Teacher")
     return model
 
+def best_LR_wider(model, trainloader, criterion, optimizer, scheduler, device, num_epochs=3, lr_range=(1e-4, 1e-1), plot_loss=True):
+    model.train()
+    model.to(device)
+    lr_values = np.logspace(np.log10(lr_range[0]), np.log10(lr_range[1]), num_epochs * len(trainloader))  # Generate learning rates for each batch
+    lr_iter = iter(lr_values)
+    losses = []
+    lrs = []
+    
+    for epoch in range(num_epochs):
+        for i, batch in enumerate(tqdm(trainloader)):
+            lr = next(lr_iter)
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = lr  # Set new learning rate
+            
+            inputs, labels = batch['img'].to(device), batch['label'].to(device)
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            # print(type(outputs), outputs[0], outputs[1])
+            loss = criterion(outputs[0], labels)
+            loss.backward()
+            optimizer.step()
+            
+            losses.append(loss.item())
+            lrs.append(lr)
+    
+    # Calculate the derivative of the loss
+    loss_derivative = np.gradient(losses)
+    
+    # Find the learning rate corresponding to the minimum derivative (steepest decline)
+    best_lr_index = np.argmin(loss_derivative)
+    best_lr = lrs[best_lr_index]
+    
+    if plot_loss:
+        import matplotlib.pyplot as plt
+        plt.figure()
+        plt.plot(lrs, losses)
+        plt.xscale('log')
+        plt.xlabel('Learning Rate')
+        plt.ylabel('Loss')
+        plt.title('Learning Rate Range Test')
+        plt.axvline(x=best_lr, color='red', linestyle='--', label=f'Best LR: {best_lr}')
+        plt.legend()
+        plt.show()
+    
+    print(f'Best learning rate: {best_lr}')
+    return best_lr
+    
 
 #### Norm and Direction code helper functions ##
 
