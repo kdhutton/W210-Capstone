@@ -21,9 +21,11 @@ def compare_inference_time(teacher, student, dataloader):
     data = next(dataiter)
     inputs = data['img']
     
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     teacher = teacher.to(device)
     student = student.to(device)
-    inputs = ianputs.to(device)
+    inputs = inputs.to(device)
     
     start_time = time.time()
     with torch.no_grad():
@@ -44,7 +46,9 @@ def compare_performance_metrics(teacher, student, dataloader):
     all_labels = []
     all_teacher_preds = []
     all_student_preds = []
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    
     for batch in dataloader:
         inputs = batch['img'].to(device)
         labels = batch['label'].to(device)
