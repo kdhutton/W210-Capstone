@@ -75,8 +75,10 @@ class ShuffleNet(nn.Module):
         self.layer1 = self._make_layer(out_planes[0], num_blocks[0], groups)
         self.layer2 = self._make_layer(out_planes[1], num_blocks[1], groups)
         self.layer3 = self._make_layer(out_planes[2], num_blocks[2], groups)
-        self.avgpool = nn.AvgPool2d(4)
-        self.fc = nn.Linear(out_planes[2], num_class)
+        # self.avgpool = nn.AvgPool2d(4)
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        # self.fc = nn.Linear(out_planes[2], num_class)
+        self.fc = nn.Linear(960, num_class) 
 
     def _make_layer(self, out_planes, num_blocks, groups):
         layers = []
@@ -102,7 +104,14 @@ class ShuffleNet(nn.Module):
         x = self.layer3(x)
 
         x = self.avgpool(x)
+
+        # print(f"Shape after avgpool: {x.shape}") 
+
+        
         emb_fea = torch.flatten(x, 1)
+
+        # print(f"Shape after flatten: {emb_fea.shape}")  
+        
         logits = self.fc(emb_fea)
 
         if embed:
