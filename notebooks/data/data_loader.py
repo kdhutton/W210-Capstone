@@ -10,7 +10,8 @@ from torch.utils.data import Subset
 import numpy as np
 from PIL import Image
 import torchvision
-from torchvision.transforms import transforms, RandAugment
+# from torchvision.transforms import transforms # this may mess up other dataloaders, for wider
+import torchvision.transforms as transforms
 import torch
 import tarfile
 import os
@@ -304,14 +305,150 @@ def load_coco(data_dir, batch_size=64):
 
 #     return train_loader, test_loader
 
-class DataSet(Dataset):
-    def __init__(self, ann_files, augs, img_size, dataset, undersample=False):
-        # Define the original class labels
-        class_labels = [0, 1, 3, 4, 6, 7, 11, 15, 17, 18, 19, 20, 22, 25, 27, 28, 30, 31, 33, 35, 36, 37, 39, 43, 44, 50, 51, 54, 57, 58]
-        class_labels_new = torch.tensor([i for i in range(len(class_labels))])
+
+# ## LB version below ##
+# class DataSet(Dataset):
+#     def __init__(self, ann_files, augs, img_size, dataset, undersample=False):
+#         # Define the original class labels
+#         class_labels = [0, 1, 3, 4, 6, 7, 11, 15, 17, 18, 19, 20, 22, 25, 27, 28, 30, 31, 33, 35, 36, 37, 39, 43, 44, 50, 51, 54, 57, 58]
+#         class_labels_new = torch.tensor([i for i in range(len(class_labels))])
         
+#         # Create a mapping from old labels to new labels
+#         self.label_mapping = {old_label: new_label for new_label, old_label in enumerate(sorted(class_labels))}
+
+#         self.dataset = dataset
+#         self.ann_files = ann_files
+#         self.augment = self.augs_function(augs, img_size)
+#         # Initialize transformations directly
+#         self.transform = transforms.Compose(
+#             [
+#                 transforms.ToTensor(),
+#                 transforms.Normalize(mean=[0, 0, 0],
+#                                      std=[1, 1, 1])
+#             ] 
+#         )
+#         if self.dataset == "wider":
+#             self.transform = transforms.Compose(
+#                 [
+#                     transforms.ToTensor(),
+#                     transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+#                 ] 
+#             )        
+
+#         self.anns = []
+#         self.load_anns()
+#         if undersample: 
+#             self.undersample_anns()
+#         print(self.augment)
+
+#     def augs_function(self, augs, img_size):            
+#         t = []
+#         if 'randomflip' in augs:
+#             t.append(torchvision.transforms.RandomHorizontalFlip())
+#         if 'ColorJitter' in augs:
+#             t.append(torchvision.transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0))
+#         if 'resizedcrop' in augs:
+#             t.append(torchvision.transforms.RandomResizedCrop(img_size, scale=(0.7, 1.0)))
+#         if 'RandAugment' in augs:
+#             t.append(torchvision.transforms.RandAugment())
+
+#         t.append(transforms.Resize((img_size, img_size)))
+
+#         return transforms.Compose(t)
+    
+#     def load_anns(self):
+#         self.anns = []
+#         for ann_file in self.ann_files:
+#             json_data = json.load(open(ann_file, "r"))
+#             self.anns += json_data
+
+#     def undersample_anns(self):
+#         # Shuffle annotations before undersampling
+#         random.shuffle(self.anns)
+
+#         # Count the instances per class
+#         class_counts = {}
+#         for ann in self.anns:
+#             label = self.extract_label(ann['img_path'])  # Assuming this method returns the class label
+#             class_counts[label] = class_counts.get(label, 0) + 1
+
+#         # Find the minimum class count
+#         min_count = min(class_counts.values())
+
+#         # Perform undersampling
+#         undersampled_anns = []
+#         current_counts = {label: 0 for label in class_counts}
+#         for ann in self.anns:
+#             label = self.extract_label(ann['img_path'])
+#             if current_counts[label] < min_count:
+#                 undersampled_anns.append(ann)
+#                 current_counts[label] += 1
+
+#         # Update the annotations to the undersampled list
+#         self.anns = undersampled_anns
+    
+#     def __len__(self):
+#         return len(self.anns)
+
+#     def __getitem__(self, idx):
+#         # Make sure the index is within bounds
+#         idx = idx % len(self)
+#         ann = self.anns[idx]
+        
+#         try:
+#             # Attempt to open the image file
+#             img = Image.open(f'WIDER/Image/{ann["file_name"]}').convert("RGB")
+
+#             # If this is the wider dataset, proceed with specific processing
+#             # x, y, w, h = ann['bbox']
+#             # img_area = img.crop([x, y, x+w, y+h])
+#             img_area = self.augment(img)
+#             img_area = self.transform(img_area)
+#             attributes_list = [target['attribute'] for target in ann['targets']]
+#             summed_attributes = [max(sum(attribute), 0) for attribute in zip(*attributes_list)]
+#             # Extract label from image path
+#             img_path = f'WIDER/Image/{ann["file_name"]}'
+#             label = self.extract_label(img_path)  # You might need to implement this method
+            
+#             return {
+#                 "label": label,
+#                 "target": torch.Tensor(summed_attributes),
+#                 "img": img_area
+#             }
+            
+
+#         except Exception as e:
+#             # If any error occurs during the processing of an image, log the error and the index
+#             print(f"Error processing image at index {idx}: {e}")
+#             # Instead of returning None, raise the exception
+#             raise
+
+#     def extract_label(self, img_path):
+#         original_label = None
+    
+#         if "WIDER/Image/train" in img_path:
+#             label_str = img_path.split("WIDER/Image/train/")[1].split("/")[0]
+#             original_label = int(label_str.split("--")[0])
+#         elif "WIDER/Image/test" in img_path:
+#             label_str = img_path.split("WIDER/Image/test/")[1].split("/")[0]
+#             original_label = int(label_str.split("--")[0])
+#         elif "WIDER/Image/val" in img_path:  # Handle validation images
+#             label_str = img_path.split("WIDER/Image/val/")[1].split("/")[0]
+#             original_label = int(label_str.split("--")[0])
+    
+#         if original_label is not None:
+#             remapped_label = self.label_mapping[original_label]
+#             return remapped_label
+#         else:
+#             raise ValueError(f"Label could not be extracted from path: {img_path}")
+
+class DataSet(Dataset):
+    def __init__(self, ann_files, class_labels, augs, img_size, dataset):
+        # Define the original class labels
+        self.class_labels = class_labels
+
         # Create a mapping from old labels to new labels
-        self.label_mapping = {old_label: new_label for new_label, old_label in enumerate(sorted(class_labels))}
+        self.label_mapping = {old_label: new_label for new_label, old_label in enumerate(sorted(self.class_labels))}
 
         self.dataset = dataset
         self.ann_files = ann_files
@@ -320,34 +457,30 @@ class DataSet(Dataset):
         self.transform = transforms.Compose(
             [
                 transforms.ToTensor(),
-                transforms.Normalize(mean=[0, 0, 0],
-                                     std=[1, 1, 1])
+                transforms.Normalize(mean=[0, 0, 0], std=[1, 1, 1])
             ] 
         )
         if self.dataset == "wider":
             self.transform = transforms.Compose(
                 [
                     transforms.ToTensor(),
-                    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-                ] 
+                    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])                ] 
             )        
 
         self.anns = []
         self.load_anns()
-        if undersample: 
-            self.undersample_anns()
         print(self.augment)
 
     def augs_function(self, augs, img_size):            
         t = []
         if 'randomflip' in augs:
-            t.append(torchvision.transforms.RandomHorizontalFlip())
+            t.append(transforms.RandomHorizontalFlip())
         if 'ColorJitter' in augs:
-            t.append(torchvision.transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0))
+            t.append(transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0))
         if 'resizedcrop' in augs:
-            t.append(torchvision.transforms.RandomResizedCrop(img_size, scale=(0.7, 1.0)))
+            t.append(transforms.RandomResizedCrop(img_size, scale=(0.7, 1.0)))
         if 'RandAugment' in augs:
-            t.append(torchvision.transforms.RandAugment())
+            t.append(transforms.RandAugment())
 
         t.append(transforms.Resize((img_size, img_size)))
 
@@ -356,34 +489,13 @@ class DataSet(Dataset):
     def load_anns(self):
         self.anns = []
         for ann_file in self.ann_files:
-            json_data = json.load(open(ann_file, "r"))
-            self.anns += json_data
+            # json_data = json.load(open(ann_file, "r"))
+            ann_file = ann_file[0] # need to extract from list format
+            with open(ann_file, "r") as file:
+                json_data = json.load(file)
+                
+            self.anns += json_data['images']
 
-    def undersample_anns(self):
-        # Shuffle annotations before undersampling
-        random.shuffle(self.anns)
-
-        # Count the instances per class
-        class_counts = {}
-        for ann in self.anns:
-            label = self.extract_label(ann['img_path'])  # Assuming this method returns the class label
-            class_counts[label] = class_counts.get(label, 0) + 1
-
-        # Find the minimum class count
-        min_count = min(class_counts.values())
-
-        # Perform undersampling
-        undersampled_anns = []
-        current_counts = {label: 0 for label in class_counts}
-        for ann in self.anns:
-            label = self.extract_label(ann['img_path'])
-            if current_counts[label] < min_count:
-                undersampled_anns.append(ann)
-                current_counts[label] += 1
-
-        # Update the annotations to the undersampled list
-        self.anns = undersampled_anns
-    
     def __len__(self):
         return len(self.anns)
 
@@ -394,7 +506,7 @@ class DataSet(Dataset):
         
         try:
             # Attempt to open the image file
-            img = Image.open(f'WIDER/Image/{ann["file_name"]}').convert("RGB")
+            img = Image.open(f'data/WIDER/Image/{ann["file_name"]}').convert("RGB")
 
             # If this is the wider dataset, proceed with specific processing
             # x, y, w, h = ann['bbox']
@@ -402,14 +514,15 @@ class DataSet(Dataset):
             img_area = self.augment(img)
             img_area = self.transform(img_area)
             attributes_list = [target['attribute'] for target in ann['targets']]
-            summed_attributes = [max(sum(attribute), 0) for attribute in zip(*attributes_list)]
+            num_people = len(attributes_list)
+            attributes_distribution = [max(sum(attribute), 0)/num_people for attribute in zip(*attributes_list)]
             # Extract label from image path
-            img_path = f'WIDER/Image/{ann["file_name"]}'
+            img_path = f'data/WIDER/Image/{ann["file_name"]}'
             label = self.extract_label(img_path)  # You might need to implement this method
             
             return {
                 "label": label,
-                "target": torch.Tensor(summed_attributes),
+                "target": torch.tensor([attributes_distribution[0]], dtype=torch.float32),
                 "img": img_area
             }
             
@@ -423,14 +536,14 @@ class DataSet(Dataset):
     def extract_label(self, img_path):
         original_label = None
     
-        if "WIDER/Image/train" in img_path:
-            label_str = img_path.split("WIDER/Image/train/")[1].split("/")[0]
+        if "data/WIDER/Image/train" in img_path:
+            label_str = img_path.split("data/WIDER/Image/train/")[1].split("/")[0]
             original_label = int(label_str.split("--")[0])
-        elif "WIDER/Image/test" in img_path:
-            label_str = img_path.split("WIDER/Image/test/")[1].split("/")[0]
+        elif "data/WIDER/Image/test" in img_path:
+            label_str = img_path.split("data/WIDER/Image/test/")[1].split("/")[0]
             original_label = int(label_str.split("--")[0])
-        elif "WIDER/Image/val" in img_path:  # Handle validation images
-            label_str = img_path.split("WIDER/Image/val/")[1].split("/")[0]
+        elif "data/WIDER/Image/val" in img_path:  # Handle validation images
+            label_str = img_path.split("data/WIDER/Image/val/")[1].split("/")[0]
             original_label = int(label_str.split("--")[0])
     
         if original_label is not None:
@@ -439,17 +552,15 @@ class DataSet(Dataset):
         else:
             raise ValueError(f"Label could not be extracted from path: {img_path}")
 
+###
 
-
-
-def load_wider(train_file_path, test_file_path, batch_size, num_workers):
+def load_wider(train_file_path, test_file_path, class_labels, batch_size, num_workers):
     train_file = [train_file_path]
     test_file = [test_file_path]
 
-    train_dataset = DataSet(train_file, augs = ['RandAugment'], 
-                            img_size = 226, dataset = 'wider', undersample=False)
-    test_dataset = DataSet(test_file, augs = [], img_size = 226, 
-                           dataset = 'wider', undersample=False)
+    train_dataset = DataSet(train_file, class_labels, augs = ['RandAugment'], img_size = 226, dataset = 'wider')
+    test_dataset = DataSet(test_file, class_labels, augs = [], img_size = 226, dataset = 'wider')
+
 
     def custom_collate(batch):
         # Filter out any None items in the batch
@@ -463,7 +574,9 @@ def load_wider(train_file_path, test_file_path, batch_size, num_workers):
         return torch.utils.data.dataloader.default_collate(batch)
     
     
-    trainloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, 
+
+    trainloader = DataLoader(train_dataset, 
+                          batch_size=batch_size, shuffle=True,
                              num_workers=num_workers, collate_fn=custom_collate)
     testloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False,
                             num_workers=num_workers, collate_fn=custom_collate)
