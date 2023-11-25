@@ -154,16 +154,23 @@ def train_teacher(model_name, model, trainloader, criterion, optimizer, schedule
     print("Finished Training Teacher")
     return model
 
-def best_LR_wider(model, trainloader, criterion, optimizer, scheduler, device, num_epochs=3, lr_range=(1e-4, 1e-1), plot_loss=True):
+def best_LR_wider(save_name, model, dataloader, criterion, optimizer, scheduler, device, num_epochs=3, lr_range=(1e-4, 1e-1), plot_loss=True):
+
     model.train()
     model.to(device)
-    lr_values = np.logspace(np.log10(lr_range[0]), np.log10(lr_range[1]), num_epochs * len(trainloader))  # Generate learning rates for each batch
+    lr_values = np.logspace(np.log10(lr_range[0]), np.log10(lr_range[1]), num_epochs * len(dataloader))  # Generate learning rates for each batch
     lr_iter = iter(lr_values)
     losses = []
     lrs = []
-    
+            
     for epoch in range(num_epochs):
-        for i, batch in enumerate(tqdm(trainloader)):
+        # for i, (inputs, labels) in enumerate(tqdm(dataloader)):
+        #     lr = next(lr_iter)
+        #     for param_group in optimizer.param_groups:
+        #         param_group['lr'] = lr  # Set new learning rate
+            
+        #     inputs, labels = batch['img'].to(device), batch['label'].to(device)
+        for i, batch in enumerate(tqdm(dataloader)):
             lr = next(lr_iter)
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr  # Set new learning rate
