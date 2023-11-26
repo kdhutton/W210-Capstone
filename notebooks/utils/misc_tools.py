@@ -210,6 +210,71 @@ def best_LR_wider(save_name, model, dataloader, criterion, optimizer, scheduler,
 
 
 
+def train_teacher_wider(model_name, model, trainloader, criterion, optimizer, scheduler, num_epochs=240, patience=5):
+    ''' A function to train the teacher models'''
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.train()
+    model.to(device)
+    best_train_loss = float('inf')
+    patience_counter = 0
+
+    for epoch in range(num_epochs):
+        running_loss = 0.0
+        epoch_loss = 0.0  
+        num_batches = 0  
+        for i, batch in enumerate(tqdm(trainloader)):
+            inputs, labels = batch['img'].to(device), batch['label'].to(device)
+            optimizer.zero_grad()
+            _, outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+            epoch_loss += loss.item()
+            num_batches += 1
+            if i % 100 == 99:  # Print every 100 mini-batches
+                print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
+                running_loss = 0.0
+
+        epoch_loss /= num_batches  
+        
+        # Check for early stopping
+        if epoch_loss < best_train_loss:
+            best_train_loss = epoch_loss
+            patience_counter = 0 
+            
+            # checkpoint
+            save_path = './weights/'
+
+            model_save_path = os.path.join(save_path, model_name)
+            
+            os.makedirs(model_save_path, exist_ok=True)
+        
+            model_save_name = os.path.join(model_save_path, 'checkpoint.pth')
+            mode_weights_name = os.path.join(model_save_path, 'weights.pth')
+        
+            torch.save(model.state_dict(), mode_weights_name)
+            torch.save(model, model_save_name)
+            
+            # model_save_name = str(save_path + model_name + '/checkpoint.pth')
+            # mode_weights_name = str(save_path + model_name + '/weights.pth')
+
+            # torch.save(model.state_dict(), mode_weights_name)
+            # torch.save(model, model_save_name)
+
+        else:
+            patience_counter += 1
+
+        if patience_counter >= patience:
+            print('Early stopping')
+            break
+
+        scheduler.step()
+
+    print("Finished Training Teacher")
+    return model
+
 #### Norm and Direction code helper functions ##
 
 def get_emb_fea(model, dataloader, batch_size, emb_size = 64):
