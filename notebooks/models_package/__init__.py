@@ -15,3 +15,5 @@ from .resnet_idenprof import *
 # from .resnetv2_idenprof import resnet50_idenprof
 # from .shufflenetv1 import shufflev1_idenprof
 # from .shufflenetv2 import shufflev2_idenprof
+
+from .resnet_wider import *
