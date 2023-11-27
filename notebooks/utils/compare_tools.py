@@ -1,15 +1,15 @@
-# import torch
-# import torch.nn as nn
-# import torch.nn.functional as F
-# import torch.optim as optim
-# import torchvision
-# import torchvision.transforms as transforms
-# from tqdm import tqdm
-# from models_package.models import Teacher, Student
-# import time
-# import matplotlib.pyplot as plt
-# import numpy as np
-# from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import torchvision
+import torchvision.transforms as transforms
+from tqdm import tqdm
+from models_package.models import Teacher, Student
+import time
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 # def compare_model_size(teacher, student):
 #     teacher_params = sum(p.numel() for p in teacher.parameters())
@@ -99,6 +99,7 @@ def compare_inference_time(teacher, student, dataloader):
     dataiter = iter(dataloader)
     data = next(dataiter)
     inputs = data['img']
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     teacher = teacher.to(device)
     student = student.to(device)
@@ -117,6 +118,8 @@ def compare_inference_time(teacher, student, dataloader):
     return teacher_time, student_time
 
 def compare_performance_metrics(teacher, student, dataloader):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     teacher.eval()
     student.eval()
     
