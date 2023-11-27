@@ -263,8 +263,8 @@ def train_student_with_distillation(student, teacher, trainloader, criterion, op
         with torch.no_grad():
             for inputs, labels in tqdm(testloader):
                 val_inputs, val_labels = inputs.to(device), labels.to(device)
-                val_inputs = val_data['img'].to(device)
-                val_labels = val_data['label'].to(device)
+                # val_inputs = val_data['img'].to(device)
+                # val_labels = val_data['label'].to(device)
     
                 # Forward pass for validation
                 _, val_outputs = model(val_inputs)
