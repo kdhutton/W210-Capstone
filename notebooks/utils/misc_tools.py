@@ -88,9 +88,31 @@ def best_LR(save_name, model, trainloader, criterion, optimizer, scheduler,
     return best_lr
 
 
+def plot_loss_curve(losses):
+    epochs = range(1, len(losses) + 1)
+    plt.plot(epochs, losses)
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.title('Training Loss Curve')
+    plt.show()
+
+
+def plot_loss_curve(losses):
+    epochs = range(1, len(losses) + 1)
+    plt.plot(epochs, losses)
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.title('Training Loss Curve')
+    plt.show()
+
 
 def train_teacher(model_name, model, trainloader, criterion, optimizer, scheduler, num_epochs=240, patience=5):
     ''' A function to train the teacher models'''
+
+    best_val_loss = float('inf')
+    patience_counter = 0
+    epoch_losses = [] 
+    val_losses = []
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.train()
@@ -113,10 +135,44 @@ def train_teacher(model_name, model, trainloader, criterion, optimizer, schedule
             epoch_loss += loss.item()
             num_batches += 1
             if i % 100 == 99:  # Print every 100 mini-batches
-                print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
+                # print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
                 running_loss = 0.0
 
         epoch_loss /= num_batches  
+        epoch_losses.append(epoch_loss)
+
+        
+        model.eval()
+        total_correct = 0
+        total_samples = 0
+        total_val_loss = 0.0
+        num_batches = 0  
+        with torch.no_grad():
+            for inputs, labels in tqdm(testloader):
+                val_inputs, val_labels = inputs.to(device), labels.to(device)
+                # val_inputs = val_data['img'].to(device)
+                # val_labels = val_data['label'].to(device)
+    
+                # Forward pass for validation
+                _, val_outputs = model(val_inputs)
+    
+                val_loss = criterion(val_outputs, val_labels)
+
+                total_val_loss += val_loss.item()
+    
+                # Compute the validation accuracy
+                _, predicted = torch.max(val_outputs, 1)
+                total_samples += val_labels.size(0)
+                total_correct += (predicted == val_labels).sum().item()
+                num_batches += 1
+            
+            total_val_loss /= num_batches
+            val_losses.append(total_val_loss)
+            accuracy = total_correct / total_samples
+            print(f'*****Epoch {epoch + 1}/{num_epochs}*****\n' 
+            f'*****Train Loss: {epoch_loss: .6f} Val Loss: {total_val_loss: .6f}*****\n'
+            f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
+
         
         # Check for early stopping
         if epoch_loss < best_train_loss:
@@ -152,7 +208,137 @@ def train_teacher(model_name, model, trainloader, criterion, optimizer, schedule
         scheduler.step()
 
     print("Finished Training Teacher")
+    plot_loss_curve(val_losses)
     return model
+
+# Function to train the student model with knowledge distillation
+def train_student_with_distillation(student, teacher, trainloader, criterion, optimizer, scheduler, device, alpha, temperature, num_epochs, patience=5):
+    
+    best_val_loss = float('inf')
+    patience_counter = 0
+    epoch_losses = [] 
+    val_losses = []
+    
+    student.train()
+    teacher.eval()
+    student.to(device)
+    teacher.to(device)
+    best_train_loss = float('inf')  
+    patience_counter = 0 
+
+    for epoch in range(num_epochs):
+        running_loss = 0.0 
+        epoch_loss = 0.0  
+        num_batches = 0  
+        # for i, batch in enumerate(tqdm(trainloader)):
+        #     inputs, labels = batch['img'].to(device), batch['label'].to(device)
+        for i, (inputs, labels) in enumerate(tqdm(trainloader)):
+            inputs, labels = inputs.to(device), labels.to(device)
+            optimizer.zero_grad()
+            student_outputs = student(inputs)
+            with torch.no_grad():
+                teacher_outputs = teacher(inputs)
+            ce_loss = criterion(student_outputs[0], labels)
+            kd_loss = tkd_kdloss(student_outputs[0], teacher_outputs[0], temperature=temperature)  # from utils.loss_functions
+            loss = alpha * kd_loss + (1 - alpha) * ce_loss
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+            epoch_loss += loss.item()
+            num_batches += 1
+            if i % 100 == 99:  
+                print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
+                running_loss = 0.0
+
+        epoch_loss /= num_batches  
+
+        epoch_losses.append(epoch_loss)
+
+        
+        model.eval()
+        total_correct = 0
+        total_samples = 0
+        total_val_loss = 0.0
+        num_batches = 0  
+        with torch.no_grad():
+            for inputs, labels in tqdm(testloader):
+                val_inputs, val_labels = inputs.to(device), labels.to(device)
+                # val_inputs = val_data['img'].to(device)
+                # val_labels = val_data['label'].to(device)
+    
+                # Forward pass for validation
+                _, val_outputs = model(val_inputs)
+    
+                val_loss = criterion(val_outputs, val_labels)
+
+                total_val_loss += val_loss.item()
+    
+                # Compute the validation accuracy
+                _, predicted = torch.max(val_outputs, 1)
+                total_samples += val_labels.size(0)
+                total_correct += (predicted == val_labels).sum().item()
+                num_batches += 1
+            total_val_loss /= num_batches
+            val_losses.append(total_val_loss)
+            accuracy = total_correct / total_samples
+            print(f'*****Epoch {epoch + 1}/{num_epochs}*****\n' 
+            f'*****Train Loss: {epoch_loss: .6f} Val Loss: {total_val_loss: .6f}*****\n'
+            f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
+
+        model.eval()
+        total_correct = 0
+        total_samples = 0
+        total_val_loss = 0.0
+        num_batches = 0  
+        with torch.no_grad():
+            for inputs, labels in tqdm(testloader):
+                val_inputs, val_labels = inputs.to(device), labels.to(device)
+                # val_inputs = val_data['img'].to(device)
+                # val_labels = val_data['label'].to(device)
+    
+                # Forward pass for validation
+                _, val_outputs = model(val_inputs)
+    
+                val_loss = criterion(val_outputs, val_labels)
+
+                total_val_loss += val_loss.item()
+    
+                # Compute the validation accuracy
+                _, predicted = torch.max(val_outputs, 1)
+                total_samples += val_labels.size(0)
+                total_correct += (predicted == val_labels).sum().item()
+                num_batches += 1
+            total_val_loss /= num_batches
+            val_losses.append(total_val_loss)
+            accuracy = total_correct / total_samples
+            print(f'*****Epoch {epoch + 1}/{num_epochs}*****\n' 
+            f'*****Train Loss: {epoch_loss: .6f} Val Loss: {total_val_loss: .6f}*****\n'
+            f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
+
+        
+
+        # Check for early stopping
+        if epoch_loss < best_train_loss:
+            best_train_loss = epoch_loss
+            patience_counter = 0 
+            torch.save(student.state_dict(), f'student_model_weights_ckd_prof_checkpoint.pth')
+            torch.save(student, f'student_model_ckd_prof_checkpoint.pth')
+        else:
+            patience_counter += 1 
+
+        if patience_counter >= patience:
+            print('Early stopping')
+            break  
+
+        scheduler.step() 
+
+
+    print("Finished Training Student")
+    plot_loss_curve(val_losses)
+    
+    return model
+
+######################### WIDER STARTS
 
 def best_LR_wider(save_name, model, dataloader, criterion, optimizer, scheduler, device, num_epochs=3, lr_range=(1e-4, 1e-1), plot_loss=True):
 
@@ -274,6 +460,8 @@ def train_teacher_wider(model_name, model, trainloader, criterion, optimizer, sc
 
     print("Finished Training Teacher")
     return model
+
+######################### WIDER ENDS
 
 #### Norm and Direction code helper functions ##
 
