@@ -111,7 +111,7 @@ def rkd_train_teacher(model, dataloader, criterion, optimizer, scheduler, device
                 val_labels = val_data['label'].to(device)
     
                 # Forward pass for validation
-                _, val_outputs = model(val_inputs)
+                val_outputs = model(val_inputs)
     
                 val_loss = criterion(val_outputs, val_labels)
 
@@ -209,7 +209,7 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, criterion,
                 val_labels = val_data['label'].to(device)
     
                 # Forward pass for validation
-                _, val_outputs = model(val_inputs)
+                val_outputs = model(val_inputs)
     
                 val_loss = criterion(val_outputs, val_labels)
 
