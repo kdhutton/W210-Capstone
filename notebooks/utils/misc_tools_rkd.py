@@ -65,7 +65,7 @@ def best_lr_rkd(model, dataloader, criterion, optimizer, scheduler, device, num_
     print(f'Best learning rate: {best_lr}')
     return best_lr
 
-def rkd_train_teacher(model, dataloader, criterion, optimizer, scheduler, device, num_epochs=5, patience=5):
+def rkd_train_teacher(model, dataloader, testloader, criterion, optimizer, scheduler, device, num_epochs=5, patience=5):
 
     best_val_loss = float('inf')
     patience_counter = 0
@@ -105,7 +105,7 @@ def rkd_train_teacher(model, dataloader, criterion, optimizer, scheduler, device
         # total_val_loss = 0.0
         # num_batches = 0  
         # with torch.no_grad():
-        #     for i, val_data in enumerate(tqdm(dataloader)):
+        #     for i, val_data in enumerate(tqdm(testloader)):
         #         # val_inputs, val_labels = inputs.to(device), labels.to(device)
         #         val_inputs = val_data['img'].to(device)
         #         val_labels = val_data['label'].to(device)
@@ -151,7 +151,7 @@ def rkd_train_teacher(model, dataloader, criterion, optimizer, scheduler, device
     print("Finished Training Teacher")
 
 # Function to train the student model with knowledge distillation
-def rkd_train_student_with_distillation(student, teacher, dataloader, criterion, optimizer, scheduler, device, alpha, temperature, num_epochs, patience=5):
+def rkd_train_student_with_distillation(student, teacher, dataloader, testloader, criterion, optimizer, scheduler, device, alpha, temperature, num_epochs, patience=5):
 
     best_val_loss = float('inf')
     patience_counter = 0
@@ -203,7 +203,7 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, criterion,
         # total_val_loss = 0.0
         # num_batches = 0  
         # with torch.no_grad():
-        #     for i, val_data in enumerate(tqdm(dataloader)):
+        #     for i, val_data in enumerate(tqdm(testloader)):
         #         # val_inputs, val_labels = inputs.to(device), labels.to(device)
         #         val_inputs = val_data['img'].to(device)
         #         val_labels = val_data['label'].to(device)
