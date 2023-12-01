@@ -106,7 +106,7 @@ def rkd_train_teacher(model, dataloader, criterion, optimizer, scheduler, device
             print('Early stopping')
             break
 
-        # scheduler.step()
+        scheduler.step()
 
     print("Finished Training Teacher")
 
@@ -161,7 +161,7 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, criterion,
             print('Early stopping')
             break  
 
-        # scheduler.step() 
+        scheduler.step() 
 
     print("Finished Training Student")
 
