@@ -66,6 +66,12 @@ def best_lr_rkd(model, dataloader, criterion, optimizer, scheduler, device, num_
     return best_lr
 
 def rkd_train_teacher(model, dataloader, criterion, optimizer, scheduler, device, num_epochs=5, patience=5):
+
+    best_val_loss = float('inf')
+    patience_counter = 0
+    epoch_losses = [] 
+    val_losses = []
+    
     model.train()
     model.to(device)
     best_train_loss = float('inf')
@@ -86,10 +92,44 @@ def rkd_train_teacher(model, dataloader, criterion, optimizer, scheduler, device
             epoch_loss += loss.item()
             num_batches += 1
             if i % 100 == 99:  # Print every 100 mini-batches
-                print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
+                # print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
                 running_loss = 0.0
 
-        epoch_loss /= num_batches  
+        epoch_loss /= num_batches
+        epoch_losses.append(epoch_loss)
+
+        
+        model.eval()
+        total_correct = 0
+        total_samples = 0
+        total_val_loss = 0.0
+        num_batches = 0  
+        with torch.no_grad():
+            for i, val_data in enumerate(tqdm(dataloader)):
+                # val_inputs, val_labels = inputs.to(device), labels.to(device)
+                val_inputs = val_data['img'].to(device)
+                val_labels = val_data['label'].to(device)
+    
+                # Forward pass for validation
+                _, val_outputs = model(val_inputs)
+    
+                val_loss = criterion(val_outputs, val_labels)
+
+                total_val_loss += val_loss.item()
+    
+                # Compute the validation accuracy
+                _, predicted = torch.max(val_outputs, 1)
+                total_samples += val_labels.size(0)
+                total_correct += (predicted == val_labels).sum().item()
+                num_batches += 1
+            
+            total_val_loss /= num_batches
+            val_losses.append(total_val_loss)
+            accuracy = total_correct / total_samples
+            print(f'*****Epoch {epoch + 1}/{num_epochs}*****\n' 
+            f'*****Train Loss: {epoch_loss: .6f} Val Loss: {total_val_loss: .6f}*****\n'
+            f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
+
         
         # Check for early stopping
         if epoch_loss < best_train_loss:
@@ -112,6 +152,12 @@ def rkd_train_teacher(model, dataloader, criterion, optimizer, scheduler, device
 
 # Function to train the student model with knowledge distillation
 def rkd_train_student_with_distillation(student, teacher, dataloader, criterion, optimizer, scheduler, device, alpha, temperature, num_epochs, patience=5):
+
+    best_val_loss = float('inf')
+    patience_counter = 0
+    epoch_losses = [] 
+    val_losses = []
+    
     student.train()
     teacher.eval()
     student.to(device)
@@ -143,10 +189,45 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, criterion,
             epoch_loss += loss.item()
             num_batches += 1
             if i % 100 == 99:  
-                print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
+                # print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
                 running_loss = 0.0
 
         epoch_loss /= num_batches  
+
+        epoch_losses.append(epoch_loss)
+
+        
+        model.eval()
+        total_correct = 0
+        total_samples = 0
+        total_val_loss = 0.0
+        num_batches = 0  
+        with torch.no_grad():
+            for i, val_data in enumerate(tqdm(dataloader)):
+                # val_inputs, val_labels = inputs.to(device), labels.to(device)
+                val_inputs = val_data['img'].to(device)
+                val_labels = val_data['label'].to(device)
+    
+                # Forward pass for validation
+                _, val_outputs = model(val_inputs)
+    
+                val_loss = criterion(val_outputs, val_labels)
+
+                total_val_loss += val_loss.item()
+    
+                # Compute the validation accuracy
+                _, predicted = torch.max(val_outputs, 1)
+                total_samples += val_labels.size(0)
+                total_correct += (predicted == val_labels).sum().item()
+                num_batches += 1
+            
+            total_val_loss /= num_batches
+            val_losses.append(total_val_loss)
+            accuracy = total_correct / total_samples
+            print(f'*****Epoch {epoch + 1}/{num_epochs}*****\n' 
+            f'*****Train Loss: {epoch_loss: .6f} Val Loss: {total_val_loss: .6f}*****\n'
+            f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
+            
 
         # Check for early stopping
         if epoch_loss < best_train_loss:
