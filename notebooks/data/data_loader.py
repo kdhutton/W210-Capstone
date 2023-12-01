@@ -494,7 +494,7 @@ class DataSet(Dataset):
             with open(ann_file, "r") as file:
                 json_data = json.load(file)
                 
-            self.anns += json_data['images']
+            self.anns += json_data
 
     def __len__(self):
         return len(self.anns)
