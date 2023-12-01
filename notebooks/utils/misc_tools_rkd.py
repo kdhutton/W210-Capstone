@@ -197,7 +197,7 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, criterion,
         epoch_losses.append(epoch_loss)
 
         
-        model.eval()
+        student.eval()
         total_correct = 0
         total_samples = 0
         total_val_loss = 0.0
@@ -209,7 +209,7 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, criterion,
                 val_labels = val_data['label'].to(device)
     
                 # Forward pass for validation
-                val_outputs = model(val_inputs)
+                val_outputs = student(val_inputs)
     
                 val_loss = criterion(val_outputs, val_labels)
 
