@@ -131,20 +131,20 @@ def rkd_train_teacher(model, dataloader, criterion, optimizer, scheduler, device
             f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
 
         
-        # Check for early stopping
-        if epoch_loss < best_train_loss:
-            best_train_loss = epoch_loss
-            patience_counter = 0 
-            # checkpoint
-            torch.save(model.state_dict(), f'teacher_model_weights_rkd_prof_checkpoint.pth')
-            torch.save(model, f'teacher_model_rkd_prof_checkpoint.pth')
+        # # Check for early stopping
+        # if epoch_loss < best_train_loss:
+        #     best_train_loss = epoch_loss
+        #     patience_counter = 0 
+        #     # checkpoint
+        #     torch.save(model.state_dict(), f'teacher_model_weights_rkd_prof_checkpoint.pth')
+        #     torch.save(model, f'teacher_model_rkd_prof_checkpoint.pth')
 
-        else:
-            patience_counter += 1
+        # else:
+        #     patience_counter += 1
 
-        if patience_counter >= patience:
-            print('Early stopping')
-            break
+        # if patience_counter >= patience:
+        #     print('Early stopping')
+        #     break
 
         scheduler.step()
 
@@ -229,18 +229,18 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, criterion,
             f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
             
 
-        # Check for early stopping
-        if epoch_loss < best_train_loss:
-            best_train_loss = epoch_loss
-            patience_counter = 0 
-            torch.save(student.state_dict(), f'student_model_weights_rkd_prof_checkpoint.pth')
-            torch.save(student, f'student_model_rkd_prof_checkpoint.pth')
-        else:
-            patience_counter += 1 
+        # # Check for early stopping
+        # if epoch_loss < best_train_loss:
+        #     best_train_loss = epoch_loss
+        #     patience_counter = 0 
+        #     torch.save(student.state_dict(), f'student_model_weights_rkd_prof_checkpoint.pth')
+        #     torch.save(student, f'student_model_rkd_prof_checkpoint.pth')
+        # else:
+        #     patience_counter += 1 
 
-        if patience_counter >= patience:
-            print('Early stopping')
-            break  
+        # if patience_counter >= patience:
+        #     print('Early stopping')
+        #     break  
 
         scheduler.step() 
 
