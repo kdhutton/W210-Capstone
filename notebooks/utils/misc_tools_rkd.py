@@ -92,59 +92,59 @@ def rkd_train_teacher(model, dataloader, criterion, optimizer, scheduler, device
             epoch_loss += loss.item()
             num_batches += 1
             if i % 100 == 99:  # Print every 100 mini-batches
-                # print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
+                print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
                 running_loss = 0.0
 
         epoch_loss /= num_batches
-        epoch_losses.append(epoch_loss)
+        # epoch_losses.append(epoch_loss)
 
         
-        model.eval()
-        total_correct = 0
-        total_samples = 0
-        total_val_loss = 0.0
-        num_batches = 0  
-        with torch.no_grad():
-            for i, val_data in enumerate(tqdm(dataloader)):
-                # val_inputs, val_labels = inputs.to(device), labels.to(device)
-                val_inputs = val_data['img'].to(device)
-                val_labels = val_data['label'].to(device)
+        # model.eval()
+        # total_correct = 0
+        # total_samples = 0
+        # total_val_loss = 0.0
+        # num_batches = 0  
+        # with torch.no_grad():
+        #     for i, val_data in enumerate(tqdm(dataloader)):
+        #         # val_inputs, val_labels = inputs.to(device), labels.to(device)
+        #         val_inputs = val_data['img'].to(device)
+        #         val_labels = val_data['label'].to(device)
     
-                # Forward pass for validation
-                val_outputs = model(val_inputs)
+        #         # Forward pass for validation
+        #         val_outputs = model(val_inputs)
     
-                val_loss = criterion(val_outputs, val_labels)
+        #         val_loss = criterion(val_outputs, val_labels)
 
-                total_val_loss += val_loss.item()
+        #         total_val_loss += val_loss.item()
     
-                # Compute the validation accuracy
-                _, predicted = torch.max(val_outputs, 1)
-                total_samples += val_labels.size(0)
-                total_correct += (predicted == val_labels).sum().item()
-                num_batches += 1
+        #         # Compute the validation accuracy
+        #         _, predicted = torch.max(val_outputs, 1)
+        #         total_samples += val_labels.size(0)
+        #         total_correct += (predicted == val_labels).sum().item()
+        #         num_batches += 1
             
-            total_val_loss /= num_batches
-            val_losses.append(total_val_loss)
-            accuracy = total_correct / total_samples
-            print(f'*****Epoch {epoch + 1}/{num_epochs}*****\n' 
-            f'*****Train Loss: {epoch_loss: .6f} Val Loss: {total_val_loss: .6f}*****\n'
-            f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
+        #     total_val_loss /= num_batches
+        #     val_losses.append(total_val_loss)
+        #     accuracy = total_correct / total_samples
+        #     print(f'*****Epoch {epoch + 1}/{num_epochs}*****\n' 
+        #     f'*****Train Loss: {epoch_loss: .6f} Val Loss: {total_val_loss: .6f}*****\n'
+        #     f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
 
         
-        # # Check for early stopping
-        # if epoch_loss < best_train_loss:
-        #     best_train_loss = epoch_loss
-        #     patience_counter = 0 
-        #     # checkpoint
-        #     torch.save(model.state_dict(), f'teacher_model_weights_rkd_prof_checkpoint.pth')
-        #     torch.save(model, f'teacher_model_rkd_prof_checkpoint.pth')
+        # Check for early stopping
+        if epoch_loss < best_train_loss:
+            best_train_loss = epoch_loss
+            patience_counter = 0 
+            # checkpoint
+            torch.save(model.state_dict(), f'teacher_model_weights_rkd_prof_checkpoint.pth')
+            torch.save(model, f'teacher_model_rkd_prof_checkpoint.pth')
 
-        # else:
-        #     patience_counter += 1
+        else:
+            patience_counter += 1
 
-        # if patience_counter >= patience:
-        #     print('Early stopping')
-        #     break
+        if patience_counter >= patience:
+            print('Early stopping')
+            break
 
         scheduler.step()
 
@@ -189,7 +189,7 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, criterion,
             epoch_loss += loss.item()
             num_batches += 1
             if i % 100 == 99:  
-                # print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
+                print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
                 running_loss = 0.0
 
         epoch_loss /= num_batches  
@@ -198,49 +198,49 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, criterion,
 
         
         student.eval()
-        total_correct = 0
-        total_samples = 0
-        total_val_loss = 0.0
-        num_batches = 0  
-        with torch.no_grad():
-            for i, val_data in enumerate(tqdm(dataloader)):
-                # val_inputs, val_labels = inputs.to(device), labels.to(device)
-                val_inputs = val_data['img'].to(device)
-                val_labels = val_data['label'].to(device)
+        # total_correct = 0
+        # total_samples = 0
+        # total_val_loss = 0.0
+        # num_batches = 0  
+        # with torch.no_grad():
+        #     for i, val_data in enumerate(tqdm(dataloader)):
+        #         # val_inputs, val_labels = inputs.to(device), labels.to(device)
+        #         val_inputs = val_data['img'].to(device)
+        #         val_labels = val_data['label'].to(device)
     
-                # Forward pass for validation
-                val_outputs = student(val_inputs)
+        #         # Forward pass for validation
+        #         val_outputs = student(val_inputs)
     
-                val_loss = criterion(val_outputs, val_labels)
+        #         val_loss = criterion(val_outputs, val_labels)
 
-                total_val_loss += val_loss.item()
+        #         total_val_loss += val_loss.item()
     
-                # Compute the validation accuracy
-                _, predicted = torch.max(val_outputs, 1)
-                total_samples += val_labels.size(0)
-                total_correct += (predicted == val_labels).sum().item()
-                num_batches += 1
+        #         # Compute the validation accuracy
+        #         _, predicted = torch.max(val_outputs, 1)
+        #         total_samples += val_labels.size(0)
+        #         total_correct += (predicted == val_labels).sum().item()
+        #         num_batches += 1
             
-            total_val_loss /= num_batches
-            val_losses.append(total_val_loss)
-            accuracy = total_correct / total_samples
-            print(f'*****Epoch {epoch + 1}/{num_epochs}*****\n' 
-            f'*****Train Loss: {epoch_loss: .6f} Val Loss: {total_val_loss: .6f}*****\n'
-            f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
+        #     total_val_loss /= num_batches
+        #     val_losses.append(total_val_loss)
+        #     accuracy = total_correct / total_samples
+        #     print(f'*****Epoch {epoch + 1}/{num_epochs}*****\n' 
+        #     f'*****Train Loss: {epoch_loss: .6f} Val Loss: {total_val_loss: .6f}*****\n'
+        #     f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
             
 
-        # # Check for early stopping
-        # if epoch_loss < best_train_loss:
-        #     best_train_loss = epoch_loss
-        #     patience_counter = 0 
-        #     torch.save(student.state_dict(), f'student_model_weights_rkd_prof_checkpoint.pth')
-        #     torch.save(student, f'student_model_rkd_prof_checkpoint.pth')
-        # else:
-        #     patience_counter += 1 
+        # Check for early stopping
+        if epoch_loss < best_train_loss:
+            best_train_loss = epoch_loss
+            patience_counter = 0 
+            torch.save(student.state_dict(), f'student_model_weights_rkd_prof_checkpoint.pth')
+            torch.save(student, f'student_model_rkd_prof_checkpoint.pth')
+        else:
+            patience_counter += 1 
 
-        # if patience_counter >= patience:
-        #     print('Early stopping')
-        #     break  
+        if patience_counter >= patience:
+            print('Early stopping')
+            break  
 
         scheduler.step() 
 
