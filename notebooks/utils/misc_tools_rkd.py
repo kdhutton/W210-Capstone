@@ -247,7 +247,7 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, testloader
 
     print("Finished Training Student")
 
-def test_model(model, testloader, criterion, device):
+def rkd_test_model(model, testloader, criterion, device):
     model.eval()
     total_test_loss = 0.0
     all_predictions = []
