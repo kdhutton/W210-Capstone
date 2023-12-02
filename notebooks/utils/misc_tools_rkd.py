@@ -198,7 +198,7 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, testloader
         epoch_losses.append(epoch_loss)
 
         
-        student.eval()
+        # student.eval()
         # total_correct = 0
         # total_samples = 0
         # total_val_loss = 0.0
@@ -246,8 +246,6 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, testloader
         scheduler.step() 
 
     print("Finished Training Student")
-
-
 
 def test_model(model, testloader, criterion, device):
     model.eval()
