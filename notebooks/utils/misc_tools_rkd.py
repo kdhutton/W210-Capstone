@@ -246,5 +246,32 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, testloader
 
     print("Finished Training Student")
 
+
+def rkd_test_model(model, testloader, criterion, device):
+    model.eval()
+    total_test_loss = 0.0
+    all_predictions = []
+    all_labels = []
+
+    with torch.no_grad():
+        for batch in testloader:
+            inputs, labels = batch['img'].to(device), batch['label'].to(device)
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            total_test_loss += loss.item()
+            _, predicted = torch.max(outputs, 1)
+            all_predictions.extend(predicted.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+
+    avg_test_loss = total_test_loss / len(testloader)
+    test_precision = precision_score(all_labels, all_predictions, average='macro')
+    test_recall = recall_score(all_labels, all_predictions, average='macro')
+    test_f1_score = f1_score(all_labels, all_predictions, average='macro')
+
+    print(f'Test Loss: {avg_test_loss:.4f}')
+    print(f'Precision: {test_precision:.4f}')
+    print(f'Recall: {test_recall:.4f}')
+    print(f'F1 Score: {test_f1_score:.4f}')
+
 ################################ RKD Functions Ended ################################
 
