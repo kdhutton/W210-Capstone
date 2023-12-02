@@ -10,6 +10,7 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
 import json
 import models_package
 from collections import OrderedDict
@@ -247,7 +248,8 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, testloader
     print("Finished Training Student")
 
 
-def rkd_test_model(model, testloader, criterion, device):
+
+def test_model(model, testloader, criterion, device):
     model.eval()
     total_test_loss = 0.0
     all_predictions = []
@@ -264,14 +266,24 @@ def rkd_test_model(model, testloader, criterion, device):
             all_labels.extend(labels.cpu().numpy())
 
     avg_test_loss = total_test_loss / len(testloader)
-    test_precision = precision_score(all_labels, all_predictions, average='macro')
+    test_accuracy = accuracy_score(all_labels, all_predictions)
+    test_precision = precision_score(all_labels, all_predictions, average='macro') # treat each class equally
     test_recall = recall_score(all_labels, all_predictions, average='macro')
     test_f1_score = f1_score(all_labels, all_predictions, average='macro')
 
+    test_precision_weighted = precision_score(all_labels, all_predictions, average='weighted')
+    test_recall_weighted = recall_score(all_labels, all_predictions, average='weighted')
+    test_f1_score_weighted = f1_score(all_labels, all_predictions, average='weighted')
+
     print(f'Test Loss: {avg_test_loss:.4f}')
+    print(f'Accuracy: {test_accuracy:.4f}')
     print(f'Precision: {test_precision:.4f}')
     print(f'Recall: {test_recall:.4f}')
     print(f'F1 Score: {test_f1_score:.4f}')
 
+    print(f'Precision Weighted: {test_precision_weighted:.4f}')
+    print(f'Recall Weighted: {test_recall_weighted:.4f}')
+    print(f'F1 Score Weighted: {test_f1_score_weighted:.4f}')
+    
 ################################ RKD Functions Ended ################################
 
