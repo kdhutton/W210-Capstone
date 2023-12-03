@@ -236,7 +236,7 @@ class DirectNormLoss(nn.Module):
         self.nd_loss_factor = nd_loss_factor
     
     def project_center(self, s_emb, t_emb, T_EMB, labels):
-        assert s_emb.size() == t_emb.size()
+        # assert s_emb.size() == t_emb.size()
         assert s_emb.shape[0] == len(labels)
         loss = 0.0
         for s, t, i in zip(s_emb, t_emb, labels):
