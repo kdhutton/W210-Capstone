@@ -28,6 +28,82 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 
 
 #### finding the optimal learning rate
+
+##### HELPER FUNCTION FOR FEATURE EXTRACTION
+
+def get_features(name):
+    def hook(model, input, output):
+        features[name] = output.detach()
+    return hook
+
+
+def best_LR_nd(save_name, model, trainloader, criterion, optimizer, scheduler, 
+                num_epochs=5, emb = False, lr_range=(1e-4, 1e-1), plot_loss=True):
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.train()
+    # create hook for feature embeddings
+    model.avgpool.register_forward_hook(get_features('feats'))
+    model.to(device)
+    lr_values = np.logspace(np.log10(lr_range[0]), np.log10(lr_range[1]), num_epochs * len(trainloader))  # Generate learning rates for each batch
+    lr_iter = iter(lr_values)
+    losses = []
+    lrs = []
+    
+    for epoch in range(num_epochs):
+        for i, (inputs, labels) in enumerate(tqdm(trainloader)):
+            lr = next(lr_iter)
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = lr  # Set new learning rate
+            
+            inputs, labels = inputs.to(device), labels.to(device)
+            optimizer.zero_grad()
+            # the Norm and Direction models give 2 outputs - feature embeddings and output
+            if emb:
+                outputs = model(inputs)
+                feats = features['feats']
+                emb_feats = torch.flatten(feats, 1)
+
+                
+                # _, outputs = model(inputs)
+            else:
+                outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            
+            losses.append(loss.item())
+            lrs.append(lr)
+    
+    # Calculate the derivative of the loss
+    loss_derivative = np.gradient(losses)
+    
+    # Find the learning rate corresponding to the minimum derivative (steepest decline)
+    best_lr_index = np.argmin(loss_derivative)
+    best_lr = lrs[best_lr_index]
+
+    
+    plot_path = './figs/LR/'
+    os.makedirs(plot_path, exist_ok=True)
+    plot_name = str(plot_path + save_name)
+
+    
+    if plot_loss:
+        plt.figure()
+        plt.plot(lrs, losses)
+        plt.xscale('log')
+        plt.xlabel('Learning Rate')
+        plt.ylabel('Loss')
+        plt.title('Learning Rate Range Test')
+        plt.axvline(x=best_lr, color='red', linestyle='--', label=f'Best LR: {best_lr}')
+        plt.legend()
+        plt.savefig(plot_name, bbox_inches='tight')
+        plt.show()
+    
+    print(f'Best learning rate: {best_lr}')
+    return best_lr
+
+
 def best_LR(save_name, model, trainloader, criterion, optimizer, scheduler, 
                 num_epochs=5, emb = False, lr_range=(1e-4, 1e-1), plot_loss=True):
     
@@ -87,14 +163,6 @@ def best_LR(save_name, model, trainloader, criterion, optimizer, scheduler,
     print(f'Best learning rate: {best_lr}')
     return best_lr
 
-
-def plot_loss_curve(losses):
-    epochs = range(1, len(losses) + 1)
-    plt.plot(epochs, losses)
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.title('Training Loss Curve')
-    plt.show()
 
 
 def plot_loss_curve(losses):
