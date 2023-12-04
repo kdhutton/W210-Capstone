@@ -391,6 +391,120 @@ def train_teacher_efficientnet(model_name, model, trainloader, testloader, crite
     plot_loss_curve(val_losses)
     return model
 
+def train_teacher_efficientnet_wider(model_name, model, trainloader, testloader, criterion, optimizer, scheduler, num_epochs=240, patience=5):
+    ''' A function to train the teacher models'''
+
+    best_val_loss = float('inf')
+    patience_counter = 0
+    epoch_losses = [] 
+    val_losses = []
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.train()
+    model.to(device)
+    # model.avgpool.register_forward_hook(get_features('feats'))
+
+    best_train_loss = float('inf')
+    patience_counter = 0
+
+    for epoch in range(num_epochs):
+        running_loss = 0.0
+        epoch_loss = 0.0  
+        num_batches = 0  
+        features = {}
+        for index, data in enumerate(tqdm(trainloader)):
+            inputs = data['img'].to(device)
+            labels = data['label'].to(device)
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            # feats = features['feats'].cpu().numpy()
+            # emb_feats = feats.flatten()
+            # _, outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+            epoch_loss += loss.item()
+            num_batches += 1
+            if index % 100 == 99:  # Print every 100 mini-batches
+                # print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
+                running_loss = 0.0
+
+        epoch_loss /= num_batches  
+        epoch_losses.append(epoch_loss)
+
+        
+        model.eval()
+        total_correct = 0
+        total_samples = 0
+        total_val_loss = 0.0
+        num_batches = 0  
+        with torch.no_grad():
+            for index, data in enumerate(tqdm(testloader)):
+
+                val_inputs = data['img'].to(device)
+                val_labels = data['label'].to(device)
+    
+                # Forward pass for validation
+                # _, val_outputs = model(val_inputs)
+                val_outputs = model(val_inputs)
+    
+                val_loss = criterion(val_outputs, val_labels)
+
+                total_val_loss += val_loss.item()
+    
+                # Compute the validation accuracy
+                _, predicted = torch.max(val_outputs, 1)
+                total_samples += val_labels.size(0)
+                total_correct += (predicted == val_labels).sum().item()
+                num_batches += 1
+            
+            total_val_loss /= num_batches
+            val_losses.append(total_val_loss)
+            accuracy = total_correct / total_samples
+            print(f'*****Epoch {epoch + 1}/{num_epochs}*****\n' 
+            f'*****Train Loss: {epoch_loss: .6f} Val Loss: {total_val_loss: .6f}*****\n'
+            f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
+
+        
+        # Check for early stopping
+        if epoch_loss < best_val_loss:
+            best_val_loss = epoch_loss
+            patience_counter = 0 
+            
+            # checkpoint
+            save_path = './weights/'
+
+            model_save_path = os.path.join(save_path, model_name)
+            
+            os.makedirs(model_save_path, exist_ok=True)
+        
+            model_save_name = os.path.join(model_save_path, 'checkpoint.pth')
+            mode_weights_name = os.path.join(model_save_path, 'weights.pth')
+        
+            torch.save(model.state_dict(), mode_weights_name)
+            torch.save(model, model_save_name)
+            
+            # model_save_name = str(save_path + model_name + '/checkpoint.pth')
+            # mode_weights_name = str(save_path + model_name + '/weights.pth')
+
+            # torch.save(model.state_dict(), mode_weights_name)
+            # torch.save(model, model_save_name)
+
+        else:
+            patience_counter += 1
+
+        if patience_counter >= patience:
+            print('Early stopping')
+            break
+
+        scheduler.step()
+
+    print("Finished Training Teacher")
+    plot_loss_curve(val_losses)
+    return model
+
+
 
 # Function to train the student model with knowledge distillation
 def train_student_with_distillation(student, teacher, trainloader, criterion, optimizer, scheduler, device, alpha, temperature, num_epochs, patience=5):
