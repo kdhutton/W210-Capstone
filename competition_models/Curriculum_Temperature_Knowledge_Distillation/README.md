@@ -5,7 +5,7 @@
 
 #### Summary
 
-"Curriculum Temperature for Knowledge Distillation" delves into the challenges associated with static knowledge distillation temperatures, emphasizing its influence on learning dynamics. Recognizing the diminishing utility of high temperatures in latter training stages, the paper proposes an adaptive approach to adjust the distillation temperature as training progresses.
+"Curriculum Temperature for Knowledge Distillation" dig into the challenges associated with static knowledge distillation temperatures, emphasizing its influence on learning dynamics. Recognizing the diminishing utility of high temperatures in latter training stages, the paper proposes an adaptive approach to adjust the distillation temperature as training progresses.
 
 #### Methodology
 
