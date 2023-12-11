@@ -10,13 +10,18 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
 import json
 import models_package
 from collections import OrderedDict
 import os
 from utils.loss_functions import tkd_kdloss, DD_loss, AD_loss, RKDDistanceLoss, RKDAngleLoss
 
-
+###########################################################################
+###########################################################################
+################################ FOR WIDER ################################
+###########################################################################
+###########################################################################
 
 ################################ RKD Functions ################################
 def best_lr_rkd(model, dataloader, criterion, optimizer, scheduler, device, num_epochs=5, lr_range=(1e-4, 1e-1), plot_loss=True):
@@ -65,7 +70,13 @@ def best_lr_rkd(model, dataloader, criterion, optimizer, scheduler, device, num_
     print(f'Best learning rate: {best_lr}')
     return best_lr
 
-def rkd_train_teacher(model, dataloader, criterion, optimizer, scheduler, device, num_epochs=5, patience=5):
+def rkd_train_teacher(model, dataloader, testloader, criterion, optimizer, scheduler, device, num_epochs=5, patience=5):
+
+    best_val_loss = float('inf')
+    patience_counter = 0
+    epoch_losses = [] 
+    val_losses = []
+    
     model.train()
     model.to(device)
     best_train_loss = float('inf')
@@ -89,7 +100,41 @@ def rkd_train_teacher(model, dataloader, criterion, optimizer, scheduler, device
                 print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
                 running_loss = 0.0
 
-        epoch_loss /= num_batches  
+        epoch_loss /= num_batches
+        # epoch_losses.append(epoch_loss)
+
+        
+        # model.eval()
+        # total_correct = 0
+        # total_samples = 0
+        # total_val_loss = 0.0
+        # num_batches = 0  
+        # with torch.no_grad():
+        #     for i, val_data in enumerate(tqdm(testloader)):
+        #         # val_inputs, val_labels = inputs.to(device), labels.to(device)
+        #         val_inputs = val_data['img'].to(device)
+        #         val_labels = val_data['label'].to(device)
+    
+        #         # Forward pass for validation
+        #         val_outputs = model(val_inputs)
+    
+        #         val_loss = criterion(val_outputs, val_labels)
+
+        #         total_val_loss += val_loss.item()
+    
+        #         # Compute the validation accuracy
+        #         _, predicted = torch.max(val_outputs, 1)
+        #         total_samples += val_labels.size(0)
+        #         total_correct += (predicted == val_labels).sum().item()
+        #         num_batches += 1
+            
+        #     total_val_loss /= num_batches
+        #     val_losses.append(total_val_loss)
+        #     accuracy = total_correct / total_samples
+        #     print(f'*****Epoch {epoch + 1}/{num_epochs}*****\n' 
+        #     f'*****Train Loss: {epoch_loss: .6f} Val Loss: {total_val_loss: .6f}*****\n'
+        #     f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
+
         
         # Check for early stopping
         if epoch_loss < best_train_loss:
@@ -111,7 +156,13 @@ def rkd_train_teacher(model, dataloader, criterion, optimizer, scheduler, device
     print("Finished Training Teacher")
 
 # Function to train the student model with knowledge distillation
-def rkd_train_student_with_distillation(student, teacher, dataloader, criterion, optimizer, scheduler, device, alpha, temperature, num_epochs, patience=5):
+def rkd_train_student_with_distillation(student, teacher, dataloader, testloader, criterion, optimizer, scheduler, device, alpha, temperature, num_epochs, patience=5):
+
+    best_val_loss = float('inf')
+    patience_counter = 0
+    epoch_losses = [] 
+    val_losses = []
+    
     student.train()
     teacher.eval()
     student.to(device)
@@ -148,6 +199,41 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, criterion,
 
         epoch_loss /= num_batches  
 
+        epoch_losses.append(epoch_loss)
+
+        
+        # student.eval()
+        # total_correct = 0
+        # total_samples = 0
+        # total_val_loss = 0.0
+        # num_batches = 0  
+        # with torch.no_grad():
+        #     for i, val_data in enumerate(tqdm(testloader)):
+        #         # val_inputs, val_labels = inputs.to(device), labels.to(device)
+        #         val_inputs = val_data['img'].to(device)
+        #         val_labels = val_data['label'].to(device)
+    
+        #         # Forward pass for validation
+        #         val_outputs = student(val_inputs)
+    
+        #         val_loss = criterion(val_outputs, val_labels)
+
+        #         total_val_loss += val_loss.item()
+    
+        #         # Compute the validation accuracy
+        #         _, predicted = torch.max(val_outputs, 1)
+        #         total_samples += val_labels.size(0)
+        #         total_correct += (predicted == val_labels).sum().item()
+        #         num_batches += 1
+            
+        #     total_val_loss /= num_batches
+        #     val_losses.append(total_val_loss)
+        #     accuracy = total_correct / total_samples
+        #     print(f'*****Epoch {epoch + 1}/{num_epochs}*****\n' 
+        #     f'*****Train Loss: {epoch_loss: .6f} Val Loss: {total_val_loss: .6f}*****\n'
+        #     f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
+            
+
         # Check for early stopping
         if epoch_loss < best_train_loss:
             best_train_loss = epoch_loss
@@ -165,5 +251,41 @@ def rkd_train_student_with_distillation(student, teacher, dataloader, criterion,
 
     print("Finished Training Student")
 
+def rkd_test_model(model, testloader, criterion, device):
+    model.eval()
+    total_test_loss = 0.0
+    all_predictions = []
+    all_labels = []
+
+    with torch.no_grad():
+        for batch in testloader:
+            inputs, labels = batch['img'].to(device), batch['label'].to(device)
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            total_test_loss += loss.item()
+            _, predicted = torch.max(outputs, 1)
+            all_predictions.extend(predicted.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+
+    avg_test_loss = total_test_loss / len(testloader)
+    test_accuracy = accuracy_score(all_labels, all_predictions)
+    test_precision = precision_score(all_labels, all_predictions, average='macro') # treat each class equally
+    test_recall = recall_score(all_labels, all_predictions, average='macro')
+    test_f1_score = f1_score(all_labels, all_predictions, average='macro')
+
+    test_precision_weighted = precision_score(all_labels, all_predictions, average='weighted')
+    test_recall_weighted = recall_score(all_labels, all_predictions, average='weighted')
+    test_f1_score_weighted = f1_score(all_labels, all_predictions, average='weighted')
+
+    print(f'Test Loss: {avg_test_loss:.4f}')
+    print(f'Accuracy: {test_accuracy:.4f}')
+    print(f'Precision: {test_precision:.4f}')
+    print(f'Recall: {test_recall:.4f}')
+    print(f'F1 Score: {test_f1_score:.4f}')
+
+    print(f'Precision Weighted: {test_precision_weighted:.4f}')
+    print(f'Recall Weighted: {test_recall_weighted:.4f}')
+    print(f'F1 Score Weighted: {test_f1_score_weighted:.4f}')
+    
 ################################ RKD Functions Ended ################################
 

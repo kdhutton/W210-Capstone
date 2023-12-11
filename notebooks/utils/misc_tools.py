@@ -28,6 +28,82 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 
 
 #### finding the optimal learning rate
+
+##### HELPER FUNCTION FOR FEATURE EXTRACTION
+
+def get_features(name):
+    def hook(model, input, output):
+        features[name] = output.detach()
+    return hook
+
+
+def best_LR_nd(save_name, model, trainloader, criterion, optimizer, scheduler, 
+                num_epochs=5, emb = False, lr_range=(1e-4, 1e-1), plot_loss=True):
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.train()
+    # create hook for feature embeddings
+    model.avgpool.register_forward_hook(get_features('feats'))
+    model.to(device)
+    lr_values = np.logspace(np.log10(lr_range[0]), np.log10(lr_range[1]), num_epochs * len(trainloader))  # Generate learning rates for each batch
+    lr_iter = iter(lr_values)
+    losses = []
+    lrs = []
+    
+    for epoch in range(num_epochs):
+        for i, (inputs, labels) in enumerate(tqdm(trainloader)):
+            lr = next(lr_iter)
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = lr  # Set new learning rate
+            
+            inputs, labels = inputs.to(device), labels.to(device)
+            optimizer.zero_grad()
+            # the Norm and Direction models give 2 outputs - feature embeddings and output
+            if emb:
+                outputs = model(inputs)
+                feats = features['feats']
+                emb_feats = torch.flatten(feats, 1)
+
+                
+                # _, outputs = model(inputs)
+            else:
+                outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            
+            losses.append(loss.item())
+            lrs.append(lr)
+    
+    # Calculate the derivative of the loss
+    loss_derivative = np.gradient(losses)
+    
+    # Find the learning rate corresponding to the minimum derivative (steepest decline)
+    best_lr_index = np.argmin(loss_derivative)
+    best_lr = lrs[best_lr_index]
+
+    
+    plot_path = './figs/LR/'
+    os.makedirs(plot_path, exist_ok=True)
+    plot_name = str(plot_path + save_name)
+
+    
+    if plot_loss:
+        plt.figure()
+        plt.plot(lrs, losses)
+        plt.xscale('log')
+        plt.xlabel('Learning Rate')
+        plt.ylabel('Loss')
+        plt.title('Learning Rate Range Test')
+        plt.axvline(x=best_lr, color='red', linestyle='--', label=f'Best LR: {best_lr}')
+        plt.legend()
+        plt.savefig(plot_name, bbox_inches='tight')
+        plt.show()
+    
+    print(f'Best learning rate: {best_lr}')
+    return best_lr
+
+
 def best_LR(save_name, model, trainloader, criterion, optimizer, scheduler, 
                 num_epochs=5, emb = False, lr_range=(1e-4, 1e-1), plot_loss=True):
     
@@ -87,14 +163,6 @@ def best_LR(save_name, model, trainloader, criterion, optimizer, scheduler,
     print(f'Best learning rate: {best_lr}')
     return best_lr
 
-
-def plot_loss_curve(losses):
-    epochs = range(1, len(losses) + 1)
-    plt.plot(epochs, losses)
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.title('Training Loss Curve')
-    plt.show()
 
 
 def plot_loss_curve(losses):
@@ -210,6 +278,233 @@ def train_teacher(model_name, model, trainloader, criterion, optimizer, schedule
     print("Finished Training Teacher")
     plot_loss_curve(val_losses)
     return model
+
+def train_teacher_efficientnet(model_name, model, trainloader, testloader, criterion, optimizer, scheduler, num_epochs=240, patience=5):
+    ''' A function to train the teacher models'''
+
+    best_val_loss = float('inf')
+    patience_counter = 0
+    epoch_losses = [] 
+    val_losses = []
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.train()
+    model.to(device)
+    # model.avgpool.register_forward_hook(get_features('feats'))
+
+    best_train_loss = float('inf')
+    patience_counter = 0
+
+    for epoch in range(num_epochs):
+        running_loss = 0.0
+        epoch_loss = 0.0  
+        num_batches = 0  
+        features = {}
+        for i, (inputs, labels) in enumerate(tqdm(trainloader)):
+            inputs, labels = inputs.to(device), labels.to(device)
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            # feats = features['feats'].cpu().numpy()
+            # emb_feats = feats.flatten()
+            # _, outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+            epoch_loss += loss.item()
+            num_batches += 1
+            if i % 100 == 99:  # Print every 100 mini-batches
+                # print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
+                running_loss = 0.0
+
+        epoch_loss /= num_batches  
+        epoch_losses.append(epoch_loss)
+
+        
+        model.eval()
+        total_correct = 0
+        total_samples = 0
+        total_val_loss = 0.0
+        num_batches = 0  
+        with torch.no_grad():
+            for inputs, labels in tqdm(testloader):
+                val_inputs, val_labels = inputs.to(device), labels.to(device)
+                # val_inputs = val_data['img'].to(device)
+                # val_labels = val_data['label'].to(device)
+    
+                # Forward pass for validation
+                # _, val_outputs = model(val_inputs)
+                val_outputs = model(val_inputs)
+    
+                val_loss = criterion(val_outputs, val_labels)
+
+                total_val_loss += val_loss.item()
+    
+                # Compute the validation accuracy
+                _, predicted = torch.max(val_outputs, 1)
+                total_samples += val_labels.size(0)
+                total_correct += (predicted == val_labels).sum().item()
+                num_batches += 1
+            
+            total_val_loss /= num_batches
+            val_losses.append(total_val_loss)
+            accuracy = total_correct / total_samples
+            print(f'*****Epoch {epoch + 1}/{num_epochs}*****\n' 
+            f'*****Train Loss: {epoch_loss: .6f} Val Loss: {total_val_loss: .6f}*****\n'
+            f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
+
+        
+        # Check for early stopping
+        if epoch_loss < best_val_loss:
+            best_val_loss = epoch_loss
+            patience_counter = 0 
+            
+            # checkpoint
+            save_path = './weights/'
+
+            model_save_path = os.path.join(save_path, model_name)
+            
+            os.makedirs(model_save_path, exist_ok=True)
+        
+            model_save_name = os.path.join(model_save_path, 'checkpoint.pth')
+            mode_weights_name = os.path.join(model_save_path, 'weights.pth')
+        
+            torch.save(model.state_dict(), mode_weights_name)
+            torch.save(model, model_save_name)
+            
+            # model_save_name = str(save_path + model_name + '/checkpoint.pth')
+            # mode_weights_name = str(save_path + model_name + '/weights.pth')
+
+            # torch.save(model.state_dict(), mode_weights_name)
+            # torch.save(model, model_save_name)
+
+        else:
+            patience_counter += 1
+
+        if patience_counter >= patience:
+            print('Early stopping')
+            break
+
+        scheduler.step()
+
+    print("Finished Training Teacher")
+    plot_loss_curve(val_losses)
+    return model
+
+def train_teacher_efficientnet_wider(model_name, model, trainloader, testloader, criterion, optimizer, scheduler, num_epochs=240, patience=5):
+    ''' A function to train the teacher models'''
+
+    best_val_loss = float('inf')
+    patience_counter = 0
+    epoch_losses = [] 
+    val_losses = []
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.train()
+    model.to(device)
+    # model.avgpool.register_forward_hook(get_features('feats'))
+
+    best_train_loss = float('inf')
+    patience_counter = 0
+
+    for epoch in range(num_epochs):
+        running_loss = 0.0
+        epoch_loss = 0.0  
+        num_batches = 0  
+        features = {}
+        for index, data in enumerate(tqdm(trainloader)):
+            inputs = data['img'].to(device)
+            labels = data['label'].to(device)
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            # feats = features['feats'].cpu().numpy()
+            # emb_feats = feats.flatten()
+            # _, outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+            epoch_loss += loss.item()
+            num_batches += 1
+            if index % 100 == 99:  # Print every 100 mini-batches
+                # print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 100:.3f}")
+                running_loss = 0.0
+
+        epoch_loss /= num_batches  
+        epoch_losses.append(epoch_loss)
+
+        
+        model.eval()
+        total_correct = 0
+        total_samples = 0
+        total_val_loss = 0.0
+        num_batches = 0  
+        with torch.no_grad():
+            for index, data in enumerate(tqdm(testloader)):
+
+                val_inputs = data['img'].to(device)
+                val_labels = data['label'].to(device)
+    
+                # Forward pass for validation
+                # _, val_outputs = model(val_inputs)
+                val_outputs = model(val_inputs)
+    
+                val_loss = criterion(val_outputs, val_labels)
+
+                total_val_loss += val_loss.item()
+    
+                # Compute the validation accuracy
+                _, predicted = torch.max(val_outputs, 1)
+                total_samples += val_labels.size(0)
+                total_correct += (predicted == val_labels).sum().item()
+                num_batches += 1
+            
+            total_val_loss /= num_batches
+            val_losses.append(total_val_loss)
+            accuracy = total_correct / total_samples
+            print(f'*****Epoch {epoch + 1}/{num_epochs}*****\n' 
+            f'*****Train Loss: {epoch_loss: .6f} Val Loss: {total_val_loss: .6f}*****\n'
+            f'*****Validation Accuracy: {accuracy * 100:.2f}%*****\n')
+
+        
+        # Check for early stopping
+        if epoch_loss < best_val_loss:
+            best_val_loss = epoch_loss
+            patience_counter = 0 
+            
+            # checkpoint
+            save_path = './weights/'
+
+            model_save_path = os.path.join(save_path, model_name)
+            
+            os.makedirs(model_save_path, exist_ok=True)
+        
+            model_save_name = os.path.join(model_save_path, 'checkpoint.pth')
+            mode_weights_name = os.path.join(model_save_path, 'weights.pth')
+        
+            torch.save(model.state_dict(), mode_weights_name)
+            torch.save(model, model_save_name)
+            
+            # model_save_name = str(save_path + model_name + '/checkpoint.pth')
+            # mode_weights_name = str(save_path + model_name + '/weights.pth')
+
+            # torch.save(model.state_dict(), mode_weights_name)
+            # torch.save(model, model_save_name)
+
+        else:
+            patience_counter += 1
+
+        if patience_counter >= patience:
+            print('Early stopping')
+            break
+
+        scheduler.step()
+
+    print("Finished Training Teacher")
+    plot_loss_curve(val_losses)
+    return model
+
+
 
 # Function to train the student model with knowledge distillation
 def train_student_with_distillation(student, teacher, trainloader, criterion, optimizer, scheduler, device, alpha, temperature, num_epochs, patience=5):
@@ -365,7 +660,9 @@ def best_LR_wider(save_name, model, dataloader, criterion, optimizer, scheduler,
             optimizer.zero_grad()
             outputs = model(inputs)
             # print(type(outputs), outputs[0], outputs[1])
-            loss = criterion(outputs[0], labels)
+            # loss = criterion(outputs[0], labels)
+            loss = criterion(outputs, labels)
+
             loss.backward()
             optimizer.step()
             
@@ -1052,3 +1349,7 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
+
+################## disparity sh*t######################
+
