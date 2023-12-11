@@ -660,7 +660,9 @@ def best_LR_wider(save_name, model, dataloader, criterion, optimizer, scheduler,
             optimizer.zero_grad()
             outputs = model(inputs)
             # print(type(outputs), outputs[0], outputs[1])
-            loss = criterion(outputs[0], labels)
+            # loss = criterion(outputs[0], labels)
+            loss = criterion(outputs, labels)
+
             loss.backward()
             optimizer.step()
             
