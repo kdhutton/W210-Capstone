@@ -10,3 +10,4 @@ pandas
 scikit-learn
 Pillow==10.1.0
 scipy
+python-dotenv

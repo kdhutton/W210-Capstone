@@ -4,14 +4,49 @@ Pytorch implementation for the paper: << link to our paper >>
 
 ## 0 Set Up Notes
 ### 0.1 Set environment variables
-Ensure that you have set up a .env file containing your aws credentials. Create the `.env` file in src/ with the following structure
-```
-AWS_ACCESS_KEY= <insert key>
-AWS_SECRET_KEY= <insert key>
-```
+- Ensure that you have set up a .env file containing your aws credentials. Create the `.env` file in src/ with the following structure
+  
+    ```bash
+    AWS_ACCESS_KEY= <insert key>
+    AWS_SECRET_KEY= <insert key>
+    ```
+    
 ### 0.2 Pull WIDER dataset
-Run the get_wider.py file to get the WIDER dataset from the s3 bucket.
+- Run the get_wider.py file to get the WIDER dataset from the s3 bucket.
 
+
+### 0.3 Prepare class-means for Norm and Direction CIFAR
+- Download the teacher checkpoint `cifar_teachers.tar` at <https://github.com/megvii-research/mdistiller/releases/tag/checkpoints> and untar it to `.src/CIFAR/ckpt`.
+- Compute the class-mean of teachers on training set
+  ```bash
+  python3 emb_fea_distribution.py \
+        --model_name resnet56_cifar \
+        --model_weights 'MODEL WEIGHT PATH' \
+        --emb_size 64 \
+        --dataset 'cifar100' \
+        --batch_size 128
+  # The results, json file, be put in ./ckpt/teacher/.
+  # e.g., ./ckpt/teacher/resnet56/center_emb_train.json
+  ```
+
+## 1 Run KD Frameworks
+
+### 1.1 train student by KD++
+  ```bash
+  # for instance, distillation from resnet-56 to resnet-20 by KD++.
+  python3 train_cifar_kd.py \
+        --model_name resnet20_cifar \
+        --teacher resnet56_cifar \
+        --epoch 240 \
+        --batch_size 64 \
+        --lr 0.1 \
+        --cls_loss_factor 1.0 \
+        --kd_loss_factor 1.0 \
+        --nd_loss_factor 2.0 \
+        --save_dir "./run/CIFAR100/KD++/res56-res20"
+  ```
+
+###
 
 
 
