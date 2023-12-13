@@ -48,3 +48,5 @@ def evaluate_model_with_gender_multiclass(pred, label, gender, num_classes):
     female_recall[:len(female_conf_matrix)] = calculate_recall_multiclass(female_conf_matrix)
 
     return male_recall - female_recall, male_conf_matrix, female_conf_matrix
+
+    

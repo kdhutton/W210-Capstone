@@ -27,7 +27,9 @@ __pycache__/
 # ND Cifar teacher weights
 ./competition_models/MB_Knowledge-Distillation-via-ND/CIFAR/ckpt/cifar_teachers/*
 ./competition_models/MB_Knowledge-Distillation-via-ND/CIFAR/*
-
+./src/WIDER/*
+./src/class_means/*
+./src/CIFAR/ckpt/*
 
 # AWS
 *.boto
