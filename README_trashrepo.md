@@ -20,3 +20,6 @@ Disparity
 FACET pipeline
 - notebooks/obsolete/YOLO_Fiftyone.ipynb (set up a compressed yolo to work with fiftyone package)
 - notebooks/obsolete/fiftyone_VF_with_averages_modularized.ipynb
+
+Plots
+- notebooks/Plots.ipynb
