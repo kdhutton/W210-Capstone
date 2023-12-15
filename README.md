@@ -14,7 +14,7 @@ But what is not appropriately addressed in knowledge distillation literature is 
 
 This research introduces a framework that combines knowledge distillation and adversarial learning for model compression and debiasing. Its main goal is to develop an efficient and unbiased student model, which learns from a complex teacher model while reducing biases in the training data, particularly those related to gender. The study demonstrates that adversarial debiasing can diminish bias and enhance accuracy by adjusting predictions to better represent underrepresented attributes within a class. This approach not only improves model efficiency and performance, but also addresses fairness concerns, making it a valuable contribution to the field of machine learning, especially in applications where resource limitations and ethical considerations are critical.
 
-![image info](./images/technical_approach.png)
+![image info](https://github.com/kdhutton/W210-Capstone/blob/code_refactor/images/technical_approach.png)
 
 ## 1 Set Up Notes
 ### 1.1 Set environment variables
